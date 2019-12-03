@@ -53,6 +53,33 @@ app.get('/', connectDb, function(req, res) {
   close(req);
 });
 
+//Handler for browse page
+app.get('/browse', connectDb, function(req, res) {
+  console.log('Got request for the home page');
+
+  res.render('home');
+
+  close(req);
+});
+
+//Handler for login page
+app.get('/login', connectDb, function(req, res) {
+  console.log('Got request for the home page');
+
+  res.render('login');
+
+  close(req);
+});
+
+//Handler for signup page
+app.get('/signup', connectDb, function(req, res) {
+  console.log('Got request for the home page');
+
+  res.render('home');
+
+  close(req);
+});
+
 /**
  * Handle all of the resources we need to clean up. In this case, we just need 
  * to close the database connection.
@@ -71,7 +98,7 @@ function close(req) {
  * Capture the port configuration for the server. We use the PORT environment
  * variable's value, but if it is not set, we will default to port 3000.
  */
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3945;
 
 /**
  * Start the server.
