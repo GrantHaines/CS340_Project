@@ -64,4 +64,4 @@ typings/
 .next
 
 #config file
-src/config.js
+config.js
