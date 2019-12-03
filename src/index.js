@@ -9,6 +9,7 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const mysql = require('mysql');
 const path = require('path');
+const bodyParser = require("body-parser");
 
 const app = express();
 
@@ -22,6 +23,8 @@ const hbs = exphbs.create({
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(path.basename(__dirname), 'views'));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // Setup static content serving
 app.use(express.static(path.join(path.basename(__dirname), 'public')));
@@ -55,7 +58,7 @@ app.get('/', connectDb, function(req, res) {
 
 //Handler for browse page
 app.get('/browse', connectDb, function(req, res) {
-  console.log('Got request for the home page');
+  console.log('Got request for the browse page');
 
   res.render('home');
 
@@ -64,7 +67,7 @@ app.get('/browse', connectDb, function(req, res) {
 
 //Handler for login page
 app.get('/login', connectDb, function(req, res) {
-  console.log('Got request for the home page');
+  console.log('Got request for the login page');
 
   res.render('login');
 
@@ -73,9 +76,29 @@ app.get('/login', connectDb, function(req, res) {
 
 //Handler for signup page
 app.get('/signup', connectDb, function(req, res) {
-  console.log('Got request for the home page');
+  console.log('Got request for the signup page');
 
   res.render('signup');
+
+  close(req);
+});
+
+//Handler for login POST submission
+app.post('/login-action', connectDb, function(req, res) {
+  console.log('Got request for login action');
+
+  console.log('Username: ' + req.body.username);
+  console.log('Password: ' + req.body.password);
+
+  close(req);
+});
+
+//Handler for signup POST submission
+app.post('/signup-action', connectDb, function(req, res) {
+  console.log('Got request for signup action');
+
+  console.log('Username: ' + req.body.username);
+  console.log('Password: ' + req.body.password);
 
   close(req);
 });
@@ -96,7 +119,7 @@ function close(req) {
 
 /**
  * Capture the port configuration for the server. We use the PORT environment
- * variable's value, but if it is not set, we will default to port 3000.
+ * variable's value, but if it is not set, we will default to port 3945.
  */
 const port = process.env.PORT || 3945;
 
