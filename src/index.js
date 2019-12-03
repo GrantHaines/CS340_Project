@@ -75,7 +75,7 @@ app.get('/login', connectDb, function(req, res) {
 app.get('/signup', connectDb, function(req, res) {
   console.log('Got request for the home page');
 
-  res.render('home');
+  res.render('signup');
 
   close(req);
 });
