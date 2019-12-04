@@ -90,6 +90,8 @@ app.post('/login-action', connectDb, function(req, res) {
   console.log('Username: ' + req.body.username);
   console.log('Password: ' + req.body.password);
 
+  res.render('login-action');
+
   close(req);
 });
 
@@ -99,6 +101,8 @@ app.post('/signup-action', connectDb, function(req, res) {
 
   console.log('Username: ' + req.body.username);
   console.log('Password: ' + req.body.password);
+
+  res.render('signup-action');
 
   close(req);
 });
