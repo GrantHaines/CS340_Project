@@ -7,6 +7,13 @@
  */
 const express = require('express');
 const exphbs = require('express-handlebars');
+
+const session = require('express-session');
+const redis = require('redis');
+const redisStore = require('connect-redis')(session);
+const client  = redis.createClient();
+const router = express.Router();
+
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
@@ -25,6 +32,15 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(path.basename(__dirname), 'views'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+//Set up session handling
+app.use(session({
+  secret: 'ssshhhhh',
+  // create new redis store.
+  store: new redisStore({ host: 'localhost', port: 6379, client: client,ttl : 260}),
+  saveUninitialized: false,
+  resave: false
+}));
 
 // Setup static content serving
 app.use(express.static(path.join(path.basename(__dirname), 'public')));
@@ -65,6 +81,15 @@ app.get('/browse', connectDb, function(req, res) {
   close(req);
 });
 
+//Handler for customer page
+app.get('/customer', connectDb, function(req, res) {
+  console.log('Got request for the customer page');
+
+  res.render('customer');
+
+  close(req);
+});
+
 //Handler for login page
 app.get('/login', connectDb, function(req, res) {
   console.log('Got request for the login page');
@@ -83,12 +108,31 @@ app.get('/signup', connectDb, function(req, res) {
   close(req);
 });
 
+app.get('/signup-customer', connectDb, function(req, res) {
+  console.log('Got request for the signup-customer page');
+
+  res.render('signup-customer');
+
+  close(req);
+});
+
+app.get('/signup-supplier', connectDb, function(req, res) {
+  console.log('Got request for the signup-supplier page');
+
+  res.render('signup-supplier');
+
+  close(req);
+});
+
 //Handler for login POST submission
-app.post('/login-action', connectDb, function(req, res) {
+app.post('/login', connectDb, function(req, res) {
   console.log('Got request for login action');
 
-  console.log('Username: ' + req.body.username);
-  console.log('Password: ' + req.body.password);
+  req.session.username = req.body.username;
+  req.session.password = req.body.password;
+
+  console.log('Username: ' + req.session.username);
+  console.log('Password: ' + req.session.password);
 
   res.render('login-action');
 
@@ -96,7 +140,7 @@ app.post('/login-action', connectDb, function(req, res) {
 });
 
 //Handler for signup POST submission
-app.post('/signup-action', connectDb, function(req, res) {
+app.post('/signup', connectDb, function(req, res) {
   console.log('Got request for signup action');
 
   console.log('Username: ' + req.body.username);
@@ -105,6 +149,16 @@ app.post('/signup-action', connectDb, function(req, res) {
   res.render('signup-action');
 
   close(req);
+});
+
+//Handler for logout
+router.get('/logout',(req,res) => {
+  req.session.destroy((err) => {
+      if(err) {
+          return console.log(err);
+      }
+      res.redirect('/');
+  });
 });
 
 /**
