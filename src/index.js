@@ -45,13 +45,30 @@ function connectDb(req, res, next) {
  * our custom `connectDb()` function that creates our database connection and
  * exposes it as `req.db`.
  */
-app.get('/', connectDb, function(req, res) {
+app.get('/', connectDb, function(req, res, next) {
   console.log('Got request for the home page');
 
-  res.render('home');
+  //info('Rendering all the products');
+  req.db.query('SELECT * FROM Products', function(
+    err,
+    products
+  ) {
+    if (err) return next(err);
+    console.log(products);
+    res.render('home', { products });
+    close(req);
+  });
+});
+
+app.get('/browse', connectDb, function(req, res) {
+  console.log('Got request for the browse page');
+
+  res.render('browse');
 
   close(req);
 });
+
+
 
 /**
  * Handle all of the resources we need to clean up. In this case, we just need 
