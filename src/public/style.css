@@ -55,7 +55,7 @@ li.search-bar {
   display: inline-flex;
   flex-wrap: wrap;
   flex-direction: column;
-  width: 70%
+  width: 30%
 }
 
 .product {
@@ -64,7 +64,7 @@ li.search-bar {
   margin: 2px;
   padding: 20px;
   border: 1px solid #dadada;
-  border-radius: 2px;
+  border-radius: 10px;
   background-color: #fff;
-  font-weight: bold;
+  font-weight: bold;  
 }
