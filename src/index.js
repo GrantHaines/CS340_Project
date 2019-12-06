@@ -62,9 +62,14 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('Got request for the browse page');
 
-  res.render('browse');
-
-  close(req);
+  req.db.query('SELECT P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
+    err,
+    products
+  ) {
+    if (err) return next(err);
+    res.render('browse', { products });
+    close(req);
+  });
 });
 
 
