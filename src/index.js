@@ -49,12 +49,11 @@ app.get('/', connectDb, function(req, res, next) {
   console.log('Got request for the home page');
 
   //info('Rendering all the products');
-  req.db.query('SELECT * FROM Products', function(
+  req.db.query('SELECT P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
     err,
     products
   ) {
     if (err) return next(err);
-    console.log(products);
     res.render('home', { products });
     close(req);
   });
