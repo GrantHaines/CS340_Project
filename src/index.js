@@ -7,8 +7,13 @@
  */
 const express = require('express');
 const exphbs = require('express-handlebars');
+
+const session = require('express-session');
+
 const mysql = require('mysql');
 const path = require('path');
+const bodyParser = require("body-parser");
+const router = express.Router();
 
 const app = express();
 
@@ -18,10 +23,25 @@ const hbs = exphbs.create({
   extname: '.hbs'
 });
 
+//Configure sessions
+const options = {
+  store: this.store, // Default is memoryStore, which is for dev only. Setup redis or memcached for prod
+  secret: 'secret', // Required, used to sign session id cookie
+  saveUninitialized: true, // Forces a session that is "uninitialized" to be saved to the store
+  resave: false, //Forces the session to be saved back to the session store
+  rolling: true //Force a session identifier cookie to be set on every response
+};
+
+const middleware = session(options);
+
 // Configure the views
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(path.basename(__dirname), 'views'));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.use(middleware);
 
 // Setup static content serving
 app.use(express.static(path.join(path.basename(__dirname), 'public')));
@@ -46,7 +66,7 @@ function connectDb(req, res, next) {
  * exposes it as `req.db`.
  */
 app.get('/', connectDb, function(req, res, next) {
-  console.log('Got request for the home page');
+  console.log('---Got request for the home page---');
 
   //info('Rendering all the products');
   req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
@@ -85,7 +105,102 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
   });
 });
 
+//Handler for customer page
+app.get('/customer', connectDb, function(req, res) {
+  console.log('---Got request for the customer page---');
 
+  res.render('customer');
+
+  close(req);
+});
+
+//Handler for login page
+app.get('/login', connectDb, function(req, res) {
+  console.log('---Got request for the login page---');
+
+  console.log('current user: ', req.body.username);
+
+  res.render('login');
+
+  close(req);
+});
+
+//Handler for signup page
+app.get('/signup', connectDb, function(req, res) {
+  console.log('---Got request for the signup page---');
+
+  res.render('signup');
+
+  close(req);
+});
+
+app.get('/signup-customer', connectDb, function(req, res) {
+  console.log('---Got request for the signup-customer page---');
+
+  res.render('signup-customer');
+
+  close(req);
+});
+
+app.get('/signup-supplier', connectDb, function(req, res) {
+  console.log('---Got request for the signup-supplier page---');
+
+  res.render('signup-supplier');
+
+  close(req);
+});
+
+//Handler for login POST submission
+app.post('/login', connectDb, function(req, res) {
+  console.log('---Got request for login action---');
+
+  req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
+      if (err) console.log(err)
+
+      if(data.length == 0)
+        res.render('login', {'message': 'Username not found'});
+      else if (data[0].password != req.body.password)
+        res.render('login', {'message': 'Password incorrect'})
+      else {
+        var response = {'first': data[0].firstName, 'last': data[0].lastName};
+        console.log('Login successful');
+        res.render('login-action', response);
+      }
+  })
+
+  close(req);
+});
+
+//Handler for signup POST submission
+app.post('/signup-customer', connectDb, function(req, res) {
+  console.log('---Got request for signup-customer action---');
+
+  console.log(req.body);
+
+  res.render('signup-action');
+
+  close(req);
+});
+
+app.post('/signup-supplier', connectDb, function(req, res) {
+  console.log('---Got request for signup-supplier action---');
+
+  console.log(req.body);
+
+  res.render('signup-action');
+
+  close(req);
+});
+
+//Handler for logout
+app.get('/logout',(req,res) => {
+  req.session.destroy((err) => {
+      if(err) {
+          return console.log(err);
+      }
+      res.redirect('/');
+  });
+});
 
 /**
  * Handle all of the resources we need to clean up. In this case, we just need 
@@ -102,8 +217,9 @@ function close(req) {
 }
 /**
  * Capture the port configuration for the server. We use the PORT environment
- * variable's value, but if it is not set, we will default to port 3000.
+ * variable's value, but if it is not set, we will default to port 3945.
  */
+
 const port = process.env.PORT || 57869;
 
 /**
