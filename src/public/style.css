@@ -68,6 +68,17 @@ li.search-bar {
   width: 30%
 }
 
+.all-products-container {
+  display: inline-flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  margin: 100px 10%;
+  position: relative;
+  left: 800px;
+  border: 2px solid #F5F5F5;
+  border-radius: 25px;
+}
+
 .product {
   flex: 0 1 30%;
   display: flex;
@@ -77,4 +88,15 @@ li.search-bar {
   border-radius: 10px;
   background-color: #fff;
   font-weight: bold;  
+  transition: all .2s ease-in-out;
+}
+
+.product:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+.specific-product-name {
+  margin: auto;
+  text-align: center;
 }
