@@ -13,7 +13,6 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
-const router = express.Router();
 
 const app = express();
 
@@ -118,7 +117,7 @@ app.get('/customer', connectDb, function(req, res) {
 app.get('/login', connectDb, function(req, res) {
   console.log('---Got request for the login page---');
 
-  console.log('current user: ', req.body.username);
+  console.log('current user: ', req.session.username);
 
   res.render('login');
 
@@ -162,8 +161,14 @@ app.post('/login', connectDb, function(req, res) {
       else if (data[0].password != req.body.password)
         res.render('login', {'message': 'Password incorrect'})
       else {
-        var response = {'first': data[0].firstName, 'last': data[0].lastName};
         console.log('Login successful');
+        req.session.username = data[0].accountName;
+        req.session.firstName = data[0].firstName;
+        req.session.lastName = data[0].lastName;
+
+        var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+
+        console.log(req.session.username + ' logged in');
         res.render('login-action', response);
       }
   })
