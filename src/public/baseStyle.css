@@ -99,4 +99,11 @@ li.search-bar {
 .specific-product-name {
   margin: auto;
   text-align: center;
+  font-size: 50px;
+}
+
+.product-details-content {
+  margin: auto;
+  text-align: center;
+  font-size: 30px;
 }
