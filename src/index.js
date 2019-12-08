@@ -45,13 +45,47 @@ function connectDb(req, res, next) {
  * our custom `connectDb()` function that creates our database connection and
  * exposes it as `req.db`.
  */
-app.get('/', connectDb, function(req, res) {
+app.get('/', connectDb, function(req, res, next) {
   console.log('Got request for the home page');
 
-  res.render('home');
-
-  close(req);
+  //info('Rendering all the products');
+  req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
+    err,
+    products
+  ) {
+    if (err) return next(err);
+    res.render('home', { products });
+    close(req);
+  });
 });
+
+app.get('/browse', connectDb, function(req, res) {
+  console.log('Got request for the browse page');
+
+  req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
+    err,
+    products
+  ) {
+    if (err) return next(err);
+    res.render('browse', { products });
+    close(req);
+  });
+});
+
+app.get('/specificProduct/:id', connectDb, function(req, res, next) {
+  let id = req.params.id
+  req.db.query('SELECT P.productName, P.description, P.supplierName, P.category FROM Products P WHERE productID = ?', [id], function(err, productDetails) {
+    if (err) return next(err);
+    if (productDetails.length === 0) {
+      info(`Product with id ${id} not found`);
+    } else {
+      res.render('specificProduct', { productDetails });
+    }
+    close(req);
+  });
+});
+
+
 
 /**
  * Handle all of the resources we need to clean up. In this case, we just need 
@@ -66,12 +100,11 @@ function close(req) {
     console.log('Database connection closed');
   }
 }
-
 /**
  * Capture the port configuration for the server. We use the PORT environment
  * variable's value, but if it is not set, we will default to port 3000.
  */
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 57869;
 
 /**
  * Start the server.

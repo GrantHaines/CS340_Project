@@ -1,1 +1,6 @@
-<h1>Hello, world!</h1>
+<h2 class="page-title">Top Items</h1> 
+<main class="top-products-container">
+    {{#each products}}
+       {{> product this}}
+    {{/each}} 
+</main>
