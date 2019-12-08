@@ -66,7 +66,7 @@ function connectDb(req, res, next) {
  * exposes it as `req.db`.
  */
 app.get('/', connectDb, function(req, res) {
-  console.log('Got request for the home page');
+  console.log('---Got request for the home page---');
 
   res.render('home');
 
@@ -75,7 +75,7 @@ app.get('/', connectDb, function(req, res) {
 
 //Handler for browse page
 app.get('/browse', connectDb, function(req, res) {
-  console.log('Got request for the browse page');
+  console.log('---Got request for the browse page---');
 
   res.render('home');
 
@@ -84,7 +84,7 @@ app.get('/browse', connectDb, function(req, res) {
 
 //Handler for customer page
 app.get('/customer', connectDb, function(req, res) {
-  console.log('Got request for the customer page');
+  console.log('---Got request for the customer page---');
 
   res.render('customer');
 
@@ -93,7 +93,7 @@ app.get('/customer', connectDb, function(req, res) {
 
 //Handler for login page
 app.get('/login', connectDb, function(req, res) {
-  console.log('Got request for the login page');
+  console.log('---Got request for the login page---');
 
   console.log('current user: ', req.body.username);
 
@@ -104,7 +104,7 @@ app.get('/login', connectDb, function(req, res) {
 
 //Handler for signup page
 app.get('/signup', connectDb, function(req, res) {
-  console.log('Got request for the signup page');
+  console.log('---Got request for the signup page---');
 
   res.render('signup');
 
@@ -112,7 +112,7 @@ app.get('/signup', connectDb, function(req, res) {
 });
 
 app.get('/signup-customer', connectDb, function(req, res) {
-  console.log('Got request for the signup-customer page');
+  console.log('---Got request for the signup-customer page---');
 
   res.render('signup-customer');
 
@@ -120,7 +120,7 @@ app.get('/signup-customer', connectDb, function(req, res) {
 });
 
 app.get('/signup-supplier', connectDb, function(req, res) {
-  console.log('Got request for the signup-supplier page');
+  console.log('---Got request for the signup-supplier page---');
 
   res.render('signup-supplier');
 
@@ -129,7 +129,7 @@ app.get('/signup-supplier', connectDb, function(req, res) {
 
 //Handler for login POST submission
 app.post('/login', connectDb, function(req, res) {
-  console.log('Got request for login action');
+  console.log('---Got request for login action---');
 
   req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
       if (err) console.log(err)
@@ -150,7 +150,7 @@ app.post('/login', connectDb, function(req, res) {
 
 //Handler for signup POST submission
 app.post('/signup-customer', connectDb, function(req, res) {
-  console.log('Got request for signup-customer action');
+  console.log('---Got request for signup-customer action---');
 
   console.log(req.body);
 
@@ -160,7 +160,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
 });
 
 app.post('/signup-supplier', connectDb, function(req, res) {
-  console.log('Got request for signup-supplier action');
+  console.log('---Got request for signup-supplier action---');
 
   console.log(req.body);
 
