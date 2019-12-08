@@ -9,14 +9,11 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 
 const session = require('express-session');
-const redis = require('redis');
-const redisStore = require('connect-redis')(session);
-const client  = redis.createClient();
-const router = express.Router();
 
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
+const router = express.Router();
 
 const app = express();
 
@@ -26,6 +23,17 @@ const hbs = exphbs.create({
   extname: '.hbs'
 });
 
+//Configure sessions
+const options = {
+  store: this.store, // Default is memoryStore, which is for dev only. Setup redis or memcached for prod
+  secret: 'secret', // Required, used to sign session id cookie
+  saveUninitialized: true, // Forces a session that is "uninitialized" to be saved to the store
+  resave: false, //Forces the session to be saved back to the session store
+  rolling: true //Force a session identifier cookie to be set on every response
+};
+
+const middleware = session(options);
+
 // Configure the views
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
@@ -33,14 +41,7 @@ app.set('views', path.join(path.basename(__dirname), 'views'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-//Set up session handling
-app.use(session({
-  secret: 'ssshhhhh',
-  // create new redis store.
-  store: new redisStore({ host: 'localhost', port: 6379, client: client,ttl : 260}),
-  saveUninitialized: false,
-  resave: false
-}));
+app.use(middleware);
 
 // Setup static content serving
 app.use(express.static(path.join(path.basename(__dirname), 'public')));
@@ -128,23 +129,26 @@ app.get('/signup-supplier', connectDb, function(req, res) {
 app.post('/login', connectDb, function(req, res) {
   console.log('Got request for login action');
 
-  req.session.username = req.body.username;
-  req.session.password = req.body.password;
-
-  console.log('Username: ' + req.session.username);
-  console.log('Password: ' + req.session.password);
-
   res.render('login-action');
 
   close(req);
 });
 
 //Handler for signup POST submission
-app.post('/signup', connectDb, function(req, res) {
-  console.log('Got request for signup action');
+app.post('/signup-customer', connectDb, function(req, res) {
+  console.log('Got request for signup-customer action');
 
-  console.log('Username: ' + req.body.username);
-  console.log('Password: ' + req.body.password);
+  console.log(req.body);
+
+  res.render('signup-action');
+
+  close(req);
+});
+
+app.post('/signup-supplier', connectDb, function(req, res) {
+  console.log('Got request for signup-supplier action');
+
+  console.log(req.body);
 
   res.render('signup-action');
 
@@ -152,7 +156,7 @@ app.post('/signup', connectDb, function(req, res) {
 });
 
 //Handler for logout
-router.get('/logout',(req,res) => {
+app.get('/logout',(req,res) => {
   req.session.destroy((err) => {
       if(err) {
           return console.log(err);
