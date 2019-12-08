@@ -95,6 +95,8 @@ app.get('/customer', connectDb, function(req, res) {
 app.get('/login', connectDb, function(req, res) {
   console.log('Got request for the login page');
 
+  console.log('current user: ', req.body.username);
+
   res.render('login');
 
   close(req);
@@ -129,7 +131,19 @@ app.get('/signup-supplier', connectDb, function(req, res) {
 app.post('/login', connectDb, function(req, res) {
   console.log('Got request for login action');
 
-  res.render('login-action');
+  req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
+      if (err) console.log(err)
+
+      if(data.length == 0)
+        res.render('login', {'message': 'Username not found'});
+      else if (data[0].password != req.body.password)
+        res.render('login', {'message': 'Password incorrect'})
+      else {
+        var response = {'first': data[0].firstName, 'last': data[0].lastName};
+        console.log('Login successful');
+        res.render('login-action', response);
+      }
+  })
 
   close(req);
 });
