@@ -50,6 +50,7 @@ app.use(express.static(path.join(path.basename(__dirname), 'public')));
  * initialize a new connection to our MySQL database on every request.
  */
 const config = require('./config');
+
 function connectDb(req, res, next) {
   console.log('Connecting to the database');
   let connection = mysql.createConnection(config);
@@ -73,7 +74,8 @@ app.get('/', connectDb, function(req, res, next) {
     products
   ) {
     if (err) return next(err);
-    res.render('home', { products });
+    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+    res.render('home', Object.assign({products},response));
     close(req);
   });
 });
@@ -86,7 +88,8 @@ app.get('/browse', connectDb, function(req, res) {
     products
   ) {
     if (err) return next(err);
-    res.render('browse', { products });
+    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+    res.render('browse', Object.assign({products}, response));
     close(req);
   });
 });
@@ -98,7 +101,8 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
     if (productDetails.length === 0) {
       info(`Product with id ${id} not found`);
     } else {
-      res.render('specificProduct', { productDetails });
+      var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+      res.render('specificProduct', Object.assign({productDetails}, response));
     }
     close(req);
   });
@@ -108,7 +112,8 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
 app.get('/customer', connectDb, function(req, res) {
   console.log('---Got request for the customer page---');
 
-  res.render('customer');
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('customer', response);
 
   close(req);
 });
@@ -119,7 +124,8 @@ app.get('/login', connectDb, function(req, res) {
 
   console.log('current user: ', req.session.username);
 
-  res.render('login');
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('login', response);
 
   close(req);
 });
@@ -128,7 +134,8 @@ app.get('/login', connectDb, function(req, res) {
 app.get('/signup', connectDb, function(req, res) {
   console.log('---Got request for the signup page---');
 
-  res.render('signup');
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('signup', response);
 
   close(req);
 });
@@ -136,7 +143,8 @@ app.get('/signup', connectDb, function(req, res) {
 app.get('/signup-customer', connectDb, function(req, res) {
   console.log('---Got request for the signup-customer page---');
 
-  res.render('signup-customer');
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('signup-customer', response);
 
   close(req);
 });
@@ -144,7 +152,8 @@ app.get('/signup-customer', connectDb, function(req, res) {
 app.get('/signup-supplier', connectDb, function(req, res) {
   console.log('---Got request for the signup-supplier page---');
 
-  res.render('signup-supplier');
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('signup-supplier', response);
 
   close(req);
 });
@@ -154,7 +163,10 @@ app.post('/login', connectDb, function(req, res) {
   console.log('---Got request for login action---');
 
   req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
-      if (err) console.log(err)
+      if (err) {
+        console.log('ERROR: DB connection failed');
+        throw err;
+      }
 
       if(data.length == 0)
         res.render('login', {'message': 'Username not found'});
@@ -182,9 +194,39 @@ app.post('/signup-customer', connectDb, function(req, res) {
 
   console.log(req.body);
 
-  res.render('signup-action');
+  //Find if username is in use
+  console.log('Search for ' + req.body.username + ' in the user DB');
+  var selectQuery = 'SELECT accountName FROM Customer WHERE accountName = ?';
+  req.db.query(selectQuery, [req.body.username], function(err, data) {
+    if (err) {
+      console.log('ERROR: DB connection failed');
+      throw err;
+    }
 
-  close(req);
+    //If so add to DB
+    if (data.length == 0) {
+      console.log('Adding user to DB');
+      var insertQuery = 'INSERT INTO Customer (accountName, password, firstName, lastName) VALUES (?, ?, ? ,?)';
+      req.db.query(insertQuery, [req.body.username, req.body.password, req.body.firstname, req.body.lastname], function(err, result) {
+        if (err) {
+          console.log('ERROR: DB connection failed');
+          throw err;
+        }
+
+        req.session.username = req.body.username;
+        req.session.firstName = req.body.firstname;
+        req.session.lastName = req.body.lastname;
+        
+        var response = {firstName: req.body.firstname, lastName: req.body.lastname};
+
+        res.render('signup-action', response);
+      })
+      close(req);
+    }
+    else {
+      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'})
+    }
+  })
 });
 
 app.post('/signup-supplier', connectDb, function(req, res) {
@@ -192,7 +234,9 @@ app.post('/signup-supplier', connectDb, function(req, res) {
 
   console.log(req.body);
 
-  res.render('signup-action');
+  
+  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  res.render('signup-action', response);
 
   close(req);
 });

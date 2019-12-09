@@ -1,5 +1,9 @@
 <h1>Sign Up</h1>
 
+{{#if message}}
+<h2>{{message}}</h2>
+{{/if}}
+
 <form action="/signup-customer" method="POST">
     Username:<br>
     <input type="text" name="username"><br>
