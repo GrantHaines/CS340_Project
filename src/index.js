@@ -69,19 +69,20 @@ app.get('/', connectDb, function(req, res, next) {
   console.log('---Got request for the home page---');
 
   //info('Rendering all the products');
-  req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
+  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
     err,
     products
   ) {
     if (err) return next(err);
     var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+    console.log({products});
     res.render('home', Object.assign({products},response));
     close(req);
   });
 });
 
 app.get('/browse', connectDb, function(req, res) {
-  console.log('Got request for the browse page');
+  console.log('---Got request for the browse page---');
 
   req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
     err,
@@ -183,9 +184,8 @@ app.post('/login', connectDb, function(req, res) {
         console.log(req.session.username + ' logged in');
         res.render('login-action', response);
       }
+      close(req);
   })
-
-  close(req);
 });
 
 //Handler for signup POST submission
