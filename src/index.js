@@ -84,7 +84,7 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('---Got request for the browse page---');
 
-  req.db.query('SELECT P.productID, P.productName, P.description, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
+  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
     err,
     products
   ) {
