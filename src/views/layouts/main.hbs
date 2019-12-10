@@ -1,13 +1,35 @@
 <!DOCTYPE html>
 <html>
 
-<a href="\" style="text-decoration: none;">
-    <h1 class="site-title"><i class="fa fa-shopping-cart" aria-hidden="true"></i>Retailer</h1>
-</a>
-
-{{>header}}
+<head>
+    <meta charset="utf-8">
+    <title  class="site-title">CS340 Class Project</title>
+    <link rel="stylesheet" href="/baseStyle.css" media="screen">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" crossorigin="anonymous">
+</head>
 
 <body>
+
+<div id="topBar">
+    <a href="\" style="text-decoration: none;">
+        <div class="site-title">
+            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+            Retailer
+        </div>
+    </a>
+    {{#if username}}
+        <div id="userTop">
+            <a href="\customer" id="userButton"> Welcome, {{firstName}} {{lastName}}</a>
+        </div>
+    {{/if}}
+    {{#if companyname}}
+        <div id="userTop">
+            <a href="\supplier" id="userButton">{{companyname}}</a>
+        </div>
+    {{/if}}
+</div>
+
+{{>header}}
 
     <div id="contentBox">
         {{{body}}}

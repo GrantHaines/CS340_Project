@@ -1,14 +1,31 @@
-<h1>Log In</h1>
+<h1 class="centeredText">Log In</h1>
 
 {{#if message}}
 <h2>{{message}}</h2>
 {{/if}}
 
-<form action="/login" method="POST">
-    Username:<br>
-    <input type="text" name="username"><br>
-    Password:<br>
-    <input type="password" name="password"><br>
-    <br>
-    <input type="submit"><br>
-</form>
+<div id="login-container">
+    <div>
+        <h2>Customer Login:</h2>
+        <form action="/login" method="POST">
+            Username:<br>
+            <input type="text" name="username"><br>
+            Password:<br>
+            <input type="password" name="password"><br>
+            <br>
+            <input type="submit"><br>
+        </form>
+    </div>
+
+<div>
+    <h2>Supplier Login:</h2>
+    <form action="/login" method="POST">
+        Company Name:<br>
+        <input type="text" name="companyname"><br>
+        Password:<br>
+        <input type="password" name="password"><br>
+        <br>
+        <input type="submit"><br>
+    </form>
+</div>
+</div>

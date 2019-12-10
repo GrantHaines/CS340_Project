@@ -1,14 +1,20 @@
-<h1>Sign Up</h1>
+<h1 class="centeredText">New Customer Signup</h1>
 
-<form action="/signup-customer" method="POST">
-    Username:<br>
-    <input type="text" name="username"><br>
-    First Name:<br>
-    <input type="text" name="firstname"><br>
-    Last Name:<br>
-    <input type="text" name="lastname"><br>
-    Password:<br>
-    <input type="text" name="password"><br>
-    <br>
-    <input type="submit"><br>
-</form>
+{{#if message}}
+<h2>{{message}}</h2>
+{{/if}}
+
+<div id="login-container">
+    <form action="/signup-customer" method="POST">
+        Username:<br>
+        <input type="text" name="username"><br>
+        First Name:<br>
+        <input type="text" name="firstname"><br>
+        Last Name:<br>
+        <input type="text" name="lastname"><br>
+        Password:<br>
+        <input type="text" name="password"><br>
+        <br>
+        <input type="submit"><br>
+    </form>
+</div>
