@@ -68,7 +68,7 @@ function getResponse(req) {
   var response;
 
   if (req.session.username) {
-    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName, cart: req.session.cart};
   }
   else if (req.session.suppliername) {
     var response = {suppliername: req.session.suppliername};
@@ -130,10 +130,19 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
       info(`Product with id ${id} not found`);
     } else {
       var response = getResponse(req);
-      res.render('specificProduct', Object.assign({productDetails}, response));
+      res.render('specificProduct', Object.assign({productDetails, id}, response));
     }
     close(req);
   });
+});
+
+app.post('/specificProduct/:id', connectDb, function(req, res) {
+  let id = req.params.id;
+  if(req.session.cart == null){
+    req.session.cart = [];
+  }
+  req.session.cart.push(id);
+  console.log(req.session.cart);
 });
 
 //Handler for customer page
