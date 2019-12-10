@@ -60,6 +60,34 @@ function connectDb(req, res, next) {
   next();
 }
 
+/*
+Function to get session variables for response.
+*/
+
+function getResponse(req) {
+  var response;
+
+  if (req.session.username) {
+    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  }
+  else if (req.session.suppliername) {
+    var response = {suppliername: req.session.suppliername};
+  }
+  console.log(response);
+  return response;
+}
+
+/*
+Function to remove session user variables
+*/
+
+function deleteSession(req) {
+  delete req.session.username;
+  delete req.session.firstName;
+  delete req.session.lastName;
+  delete req.session.suppliername;
+}
+
 /**
  * This is the handler for our main page. The middleware pipeline includes
  * our custom `connectDb()` function that creates our database connection and
@@ -74,8 +102,7 @@ app.get('/', connectDb, function(req, res, next) {
     products
   ) {
     if (err) return next(err);
-    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
-    console.log({products});
+    var response = getResponse(req);
     res.render('home', Object.assign({products},response));
     close(req);
   });
@@ -89,7 +116,7 @@ app.get('/browse', connectDb, function(req, res) {
     products
   ) {
     if (err) return next(err);
-    var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+    var response = getResponse(req);
     res.render('browse', Object.assign({products}, response));
     close(req);
   });
@@ -102,7 +129,7 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
     if (productDetails.length === 0) {
       info(`Product with id ${id} not found`);
     } else {
-      var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+      var response = getResponse(req);
       res.render('specificProduct', Object.assign({productDetails}, response));
     }
     close(req);
@@ -113,8 +140,18 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
 app.get('/customer', connectDb, function(req, res) {
   console.log('---Got request for the customer page---');
 
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  var response = getResponse(req);
   res.render('customer', response);
+
+  close(req);
+});
+
+//Handler for supplier page
+app.get('/supplier', connectDb, function(req, res) {
+  console.log('---Got request for the supplier page---');
+
+  var response = getResponse(req);
+  res.render('supplier', response);
 
   close(req);
 });
@@ -124,8 +161,9 @@ app.get('/login', connectDb, function(req, res) {
   console.log('---Got request for the login page---');
 
   console.log('current user: ', req.session.username);
+  console.log('current supplier: ', req.session.suppliername);
 
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  var response = getResponse(req);
   res.render('login', response);
 
   close(req);
@@ -135,7 +173,7 @@ app.get('/login', connectDb, function(req, res) {
 app.get('/signup', connectDb, function(req, res) {
   console.log('---Got request for the signup page---');
 
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  var response = getResponse(req);
   res.render('signup', response);
 
   close(req);
@@ -144,7 +182,7 @@ app.get('/signup', connectDb, function(req, res) {
 app.get('/signup-customer', connectDb, function(req, res) {
   console.log('---Got request for the signup-customer page---');
 
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  var response = getResponse(req);
   res.render('signup-customer', response);
 
   close(req);
@@ -153,7 +191,7 @@ app.get('/signup-customer', connectDb, function(req, res) {
 app.get('/signup-supplier', connectDb, function(req, res) {
   console.log('---Got request for the signup-supplier page---');
 
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+  var response = getResponse(req);
   res.render('signup-supplier', response);
 
   close(req);
@@ -163,29 +201,56 @@ app.get('/signup-supplier', connectDb, function(req, res) {
 app.post('/login', connectDb, function(req, res) {
   console.log('---Got request for login action---');
 
-  req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
+  if (req.body.username) {
+    req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
+        if (err) {
+          console.log('ERROR: DB connection failed');
+          throw err;
+        }
+
+        if(data.length == 0 || data[0].password != req.body.password)
+        res.render('login', {'message': 'Username not found/Password incorrect'});
+        else {
+          console.log('Login successful');
+          //Delete previous session
+          deleteSession(req);
+
+          req.session.username = data[0].accountName;
+          req.session.firstName = data[0].firstName;
+          req.session.lastName = data[0].lastName;
+
+          var response = getResponse(req);
+
+          console.log(req.session.username + ' logged in');
+          res.render('login-action', response);
+        }
+        close(req);
+    })
+  }
+  else if (req.body.companyname) {
+    req.db.query('SELECT supplierName, password FROM Suppliers WHERE supplierName = ?', [req.body.companyname], function(err, data) {
       if (err) {
         console.log('ERROR: DB connection failed');
         throw err;
       }
 
-      if(data.length == 0)
-        res.render('login', {'message': 'Username not found'});
-      else if (data[0].password != req.body.password)
-        res.render('login', {'message': 'Password incorrect'})
+      if(data.length == 0 || data[0].password != req.body.password)
+        res.render('login', {'message': 'Company name not found/Password incorrect'});
       else {
         console.log('Login successful');
-        req.session.username = data[0].accountName;
-        req.session.firstName = data[0].firstName;
-        req.session.lastName = data[0].lastName;
+        //Delete previous session
+        deleteSession(req);
 
-        var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
+        req.session.suppliername = data[0].supplierName;
+
+        var response = getResponse(req);
 
         console.log(req.session.username + ' logged in');
         res.render('login-action', response);
       }
       close(req);
-  })
+    })
+  }
 });
 
 //Handler for signup POST submission
@@ -212,12 +277,14 @@ app.post('/signup-customer', connectDb, function(req, res) {
           console.log('ERROR: DB connection failed');
           throw err;
         }
-
+        //Delete previous session
+        deleteSession(req);
+        //Add user to new new session
         req.session.username = req.body.username;
         req.session.firstName = req.body.firstname;
         req.session.lastName = req.body.lastname;
-        
-        var response = {firstName: req.body.firstname, lastName: req.body.lastname};
+        //Send session variables as response
+        var response = getResponse(req);
 
         res.render('signup-action', response);
       })
@@ -232,13 +299,38 @@ app.post('/signup-customer', connectDb, function(req, res) {
 app.post('/signup-supplier', connectDb, function(req, res) {
   console.log('---Got request for signup-supplier action---');
 
-  console.log(req.body);
+  var selectQuery = 'SELECT supplierName FROM Suppliers WHERE supplierName = ?';
+  req.db.query(selectQuery, [req.body.companyname], function(err, data) {
+    if (err) {
+      console.log('ERROR: DB connection failed');
+      throw err;
+    }
 
-  
-  var response = {username: req.session.username, firstName: req.session.firstName, lastName: req.session.lastName};
-  res.render('signup-action', response);
+    //If so add to DB
+    if (data.length == 0) {
+      console.log('Adding company to DB');
+      var insertQuery = 'INSERT INTO Suppliers (supplierName, password) VALUES (?, ?)';
+      req.db.query(insertQuery, [req.body.companyname, req.body.password], function(err, result) {
+        if (err) {
+          console.log('ERROR: DB connection failed');
+          throw err;
+        }
+        //Delete previous session
+        deleteSession(req);
+        //Add user to new new session
+        req.session.suppliername = req.body.companyname;
+        //Send session variables as response
+        var response = getResponse(req);
 
-  close(req);
+        res.render('signup-action', response);
+      })
+      close(req);
+    }
+    else {
+      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'});
+      close(req);
+    }
+  })
 });
 
 //Handler for logout
