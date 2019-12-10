@@ -185,3 +185,43 @@ li.search-bar {
   background-color: black;
   color: white;
 }
+
+.add-to-order-button {
+  display: inline-block;
+  border-radius: 4px;
+  background-color: 	dodgerblue;
+  border: none;
+  color: white;
+  text-align: center;
+  font-size: 23px;
+  padding: 20px;
+  width: 250px;
+  transition: all .5s;
+  cursor: pointer;
+  margin: 5px;
+}
+
+.add-to-order-button span {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: 0.5s;
+}
+
+.add-to-order-button span:after {
+  content: '\00bb';
+  position: absolute;
+  opacity: 0;
+  top: 0;
+  right: -20px;
+  transition: 0.5s;
+}
+
+.add-to-order-button:hover span {
+  padding-right: 25px;
+}
+
+.add-to-order-button:hover span:after {
+  opacity: 1;
+  right: 0;
+}
