@@ -110,6 +110,8 @@ app.get('/', connectDb, function(req, res, next) {
       products[i].price = products[i].price.toFixed(2);
       if (products[i].numBought == null) products[i].numBought = 0;
       if (products[i].numAvailable == null) products[i].numAvailable = 0;
+      if (req.session.username)
+        products[i].username = req.session.username
     }
     var response = getResponse(req);
     res.render('home', Object.assign({products},response));
@@ -124,29 +126,27 @@ app.get('/browse', connectDb, function(req, res) {
   var filterCategory = null;
   var filterSupplier = null;
 
-  console.log(req.query);
-
   if (req.query.productname != null && req.query.productname != '')
-    filterName = 'P.productName LIKE \'%' + req.query.productname + '%\' ';
+    filterName = 'productName LIKE \'%' + req.query.productname + '%\' ';
   if (req.query.category != null && req.query.category != '')
-    filterCategory = 'P.category = \'' + req.query.category + '\' ';
+    filterCategory = 'category = \'' + req.query.category + '\' ';
   if (req.query.supplier != null && req.query.supplier != '')
-    filterSupplier = 'P.supplierName LIKE \'%' + req.query.supplier + '%\' ';
+    filterSupplier = 'supplierName LIKE \'%' + req.query.supplier + '%\' ';
 
-  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
-  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  var sqlquery = 'SELECT * FROM browse';
+
   if (filterName != null || filterCategory != null || filterSupplier != null) {
-    from += 'WHERE ';
+    sqlquery += ' WHERE ';
     if (filterName != null)
-      from += filterName;
+      sqlquery += filterName;
     if (filterCategory != null)
-      from += filterCategory;
+      sqlquery += filterCategory;
     if (filterSupplier != null)
-      from += filterSupplier;
-    console.log('from query =', from);
+      sqlquery += filterSupplier;
+    console.log('browse conditions =', sqlquery);
   }
-  var query = select + from +'GROUP BY P.productID HAVING numAvailable > 0 ORDER BY P.category, price DESC';
-  req.db.query(query, function(
+
+  req.db.query(sqlquery, function(
     err,
     products
   ) {
@@ -154,22 +154,10 @@ app.get('/browse', connectDb, function(req, res) {
     var response = getResponse(req);
     for (var i = 0; i < products.length; i++) {
       products[i].price = products[i].price.toFixed(2); //Convert price to have two decimal points
+      if (req.session.username)
+        products[i].username = req.session.username
     }
     res.render('browse', Object.assign({products}, response));
-    close(req);
-  });
-});
-
-app.get('/specificProduct/:id', connectDb, function(req, res, next) {
-  let id = req.params.id
-  req.db.query('SELECT P.productName, P.description, P.supplierName, P.category FROM Products P WHERE productID = ?', [id], function(err, productDetails) {
-    if (err) return next(err);
-    if (productDetails.length === 0) {
-      info(`Product with id ${id} not found`);
-    } else {
-      var response = getResponse(req);
-      res.render('specificProduct', Object.assign({productDetails}, response));
-    }
     close(req);
   });
 });
@@ -467,7 +455,7 @@ app.post('/login', connectDb, function(req, res) {
           console.log('ERROR: DB connection failed');
           throw err;
         }
-        if(data.length == 0 || passwordHash.verify(req.body.password, data[0].password))
+        if(data.length == 0 || !passwordHash.verify(req.body.password, data[0].password))
         res.render('login', {'message': 'Username not found/Password incorrect'});
         else {
           console.log('Login successful');
@@ -494,7 +482,7 @@ app.post('/login', connectDb, function(req, res) {
         throw err;
       }
 
-      if(data.length == 0 || passwordHash.verify(req.body.password, data[0].password))
+      if(data.length == 0 || !passwordHash.verify(req.body.password, data[0].password))
         res.render('login', {'message': 'Company name not found/Password incorrect'});
       else {
         console.log('Login successful');
