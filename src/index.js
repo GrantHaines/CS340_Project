@@ -15,6 +15,8 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const async = require("async");
 
+const async = require("async");
+
 const app = express();
 
 // Configure handlebars
@@ -74,7 +76,7 @@ function getResponse(req) {
   else if (req.session.suppliername) {
     var response = {suppliername: req.session.suppliername};
   }
-  console.log(response);
+  console.log('Response:', response);
   return response;
 }
 
@@ -99,11 +101,16 @@ app.get('/', connectDb, function(req, res, next) {
   console.log('---Got request for the home page---');
 
   //info('Rendering all the products');
-  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
-    err,
-    products
-  ) {
+  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(itemsOrdered) AS numBought ';
+  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  var query = select + from +'GROUP BY P.productID ORDER BY numBought DESC LIMIT 4';
+  req.db.query(query, function(err, products) {
     if (err) return next(err);
+    for (var i = 0; i < products.length; i++) {
+      products[i].price = products[i].price.toFixed(2);
+      if (products[i].numBought == null) products[i].numBought = 0;
+      if (products[i].numAvailable == null) products[i].numAvailable = 0;
+    }
     var response = getResponse(req);
     res.render('home', Object.assign({products},response));
     close(req);
@@ -113,12 +120,18 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('---Got request for the browse page---');
 
-  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
+  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
+  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  var query = select + from +'GROUP BY P.productID ORDER BY numAvailable DESC LIMIT 4';
+  req.db.query(query, function(
     err,
     products
   ) {
     if (err) return next(err);
     var response = getResponse(req);
+    for (var i = 0; i < products.length; i++) {
+      products[i].price = products[i].price.toFixed(2); //Convert price to have two decimal points
+    }
     res.render('browse', Object.assign({products}, response));
     close(req);
   });
@@ -191,19 +204,113 @@ app.post('/specificProduct/:id', connectDb, function(req, res) {
 app.get('/customer', connectDb, function(req, res) {
   console.log('---Got request for the customer page---');
 
-  var response = getResponse(req);
-  res.render('customer', response);
-
-  close(req);
+  if (req.session.username) {
+    var query = 'SELECT Orders.orderID, totalCost, datePurchased FROM Orders WHERE accountName = ? ORDER BY datePurchased';
+    req.db.query(query, [req.session.username], function(err, order) {
+      if (err) {
+        console.log('ERROR: DB connection failed');
+        throw err;
+      }
+      //The following uses the async library to make sure all of the items in the orders are collected before finishing the whole query.
+      var orderInner = [];
+      var innerQuery = 'SELECT P.productName, C.price, I.itemsOrdered, P.supplierName FROM ItemsinOrder I INNER JOIN Catalog C ON I.catalogID = C.catalogID INNER JOIN Products P ON C.productID = P.productID WHERE I.orderID = ?';
+      async.forEachOf(order, function(value, key, callback) {
+        req.db.query(innerQuery, [value.orderID], function(err, orderItems) {
+          if (err) throw err;
+          orderInner[key] = orderItems;
+          callback();
+        })
+      }, function(err) {
+        for (var i = 0; i < order.length; i++) {
+          order[i].datePurchased = order[i].datePurchased.toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+          order[i].totalCost = order[i].totalCost.toFixed(2);
+          order[i].orderItems = orderInner[i];
+        }
+        var response = getResponse(req);
+        res.render('customer', Object.assign({order}, response));
+        close(req);
+      });
+    })
+  }
+  else {
+    var response = getResponse(req);
+    res.render('customer', response);
+  }
 });
 
 //Handler for supplier page
 app.get('/supplier', connectDb, function(req, res) {
   console.log('---Got request for the supplier page---');
 
-  var response = getResponse(req);
-  res.render('supplier', response);
+  if (req.session.suppliername) {
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+    var query = select + from +'WHERE P.supplierName = ? GROUP BY P.productID';
+    req.db.query(query, [req.session.suppliername], function(err, data) {
+      if (err) {
+        console.log('ERROR: DB connection failed');
+        throw err;
+      }
+      if (data.length === 0)
+        data = false;
+      
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].numBought == null) data[i].numBought = 0;
+        if (data[i].numAvailable == null) data[i].numAvailable = 0;
+      }
+      var response = getResponse(req);
+      res.render('supplier', Object.assign({data}, response));
+      close(req);
+    })
+  }
+  else {
+    var response = getResponse(req);
+    res.render('supplier', response);
+  }
+});
 
+//Handler for supplier-product page
+app.get('/supplier-product', connectDb, function(req, res, next) {
+  console.log('---Got request for the supplier-product page---');
+
+  if (req.session.suppliername) {
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+    var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
+    req.db.query(sql, [req.session.suppliername, req.query.id], function(err, data) {
+      if (err) return next(err);
+      if (data.length === 0) {
+        console.log(`Product with id ${id} not found`);
+        close(req);
+      } else {
+        var innerQuery = 'SELECT C.catalogID, C.price, C.numberOfEntries, C.productID FROM Catalog C WHERE productID = ? AND numberOfEntries > 0';
+        req.db.query(innerQuery, [data[0].productID], function(err, catalogItems) {
+          if (err) throw err;
+
+          for (var i = 0; i < catalogItems.length; i++) {
+            if (catalogItems[i].price < data[0].maxPrice) catalogItems[i].notSold = true
+            catalogItems[i].price = catalogItems[i].price.toFixed(2);
+          }
+
+          var response = getResponse(req);
+          res.render('supplier-product', Object.assign(data[0], response, {catalogItems}));
+          close(req);
+        })
+      }
+    });
+  }
+  else {
+    res.render('supplier-product');
+    close(req);
+  }
+});
+
+//Handler for new product page
+app.get('/supplier-newproduct', connectDb, function(req, res, next) {
+  console.log('---Got request for the supplier-product page---');
+
+  var response = getResponse(req);
+  res.render('supplier-newproduct', response);
   close(req);
 });
 
@@ -230,28 +337,10 @@ app.get('/signup', connectDb, function(req, res) {
   close(req);
 });
 
-app.get('/signup-customer', connectDb, function(req, res) {
-  console.log('---Got request for the signup-customer page---');
-
-  var response = getResponse(req);
-  res.render('signup-customer', response);
-
-  close(req);
-});
-
-app.get('/signup-supplier', connectDb, function(req, res) {
-  console.log('---Got request for the signup-supplier page---');
-
-  var response = getResponse(req);
-  res.render('signup-supplier', response);
-
-  close(req);
-});
-
 //Handler for login POST submission
 app.post('/login', connectDb, function(req, res) {
   console.log('---Got request for login action---');
-
+  //Log in as user
   if (req.body.username) {
     req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
         if (err) {
@@ -278,6 +367,7 @@ app.post('/login', connectDb, function(req, res) {
         close(req);
     })
   }
+  //Log in as company
   else if (req.body.companyname) {
     req.db.query('SELECT supplierName, password FROM Suppliers WHERE supplierName = ?', [req.body.companyname], function(err, data) {
       if (err) {
@@ -342,7 +432,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
       close(req);
     }
     else {
-      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'})
+      res.render('signup', {'message': 'Account name already in use - Please try a different name'})
     }
   })
 });
@@ -378,7 +468,7 @@ app.post('/signup-supplier', connectDb, function(req, res) {
       close(req);
     }
     else {
-      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'});
+      res.render('signup', {'message': 'Account name already in use - Please try a different name'});
       close(req);
     }
   })

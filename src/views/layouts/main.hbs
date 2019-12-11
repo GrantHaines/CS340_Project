@@ -6,6 +6,7 @@
     <title  class="site-title">CS340 Class Project</title>
     <link rel="stylesheet" href="/baseStyle.css" media="screen">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
@@ -13,8 +14,7 @@
 <div id="topBar">
     <a href="\" style="text-decoration: none;">
         <div class="site-title">
-            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-            Retailer
+            <i class="fa fa-shopping-cart" aria-hidden="true"></i><span class="site-title-words">Cascadia Retailer</span>
         </div>
     </a>
     {{#if username}}
@@ -36,7 +36,14 @@
     </div>
   
     {{#if username}}
-    <button type="button" id="cart-button" onclick="location.href='/cart'"><i class="fas fa-shopping-cart"></i></button>
+    <button type="button" id="cart-button"><i class="material-icons">shopping_cart</i></button>
     {{/if}}
 
+    <div id="footer">
+        <p class="centeredText">Thank you for visiting Cascadia Retailer!</p>
+    </div>
+
 </body>
+
+</html>
+<script> </script>

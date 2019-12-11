@@ -1,0 +1,26 @@
+{{#unless suppliername}}
+<h1 class="centeredText">Sorry, you have to log in to access this page.</h1>
+{{/unless}}
+{{#if suppliername}}
+    <h1 class="centeredText">{{suppliername}} - Supplier Page</h1>
+    <a class="supplier-container surroundLink" href="/supplier">
+        <div class="supplierButton">Back to Supplier Page</div>
+    </a>
+    <div id="login-container">
+        <form action="/supplier-newproduct" method="POST">
+            Product Name:<br>
+            <input type="text" name="newname"><br>
+            Description:<br>
+            <textarea type="text" name="newdescription" rows="5" cols="30"></textarea>
+            <br>
+            Category:<br>
+            <select id="category">
+                <option value="test">Placeholder</option>
+                {{#each category}}
+                <option value="{{categoryname}}">{{categoryname}}</option>
+                {{/each}}
+            </select><br><br>
+            <input type="submit"><br>
+        </form>
+    </div>
+{{/if}}

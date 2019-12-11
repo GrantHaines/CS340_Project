@@ -1,3 +1,32 @@
-<h1>Your Orders</h1>
+{{#unless username}}
+<h1 class="centeredText">Sorry, you have to log in to access this page.</h1>
+{{/unless}}
+{{#if username}}
+    <h1 class="centeredText">Welcome, {{firstName}} {{lastName}}</h1>
+    {{#if cart}}
+    <h2 class="centeredText">Your Cart:</h2>
 
-<p>orders go here</p>
+    {{/if}}
+    {{#if order}}
+    <h2 class="centeredText">Your Past Orders:</h2>
+
+    <div id="order-container">
+        {{#each order}}
+        <div class="order">
+            <div class="orderTop">
+                <p>Purchased: {{this.datePurchased}}</p>
+                <p>Total: ${{this.totalCost}}</p>
+            </div>
+            <div>
+                Items Ordered:
+                {{#each orderItems}}
+                <div>
+                    <p>{{itemsOrdered}} of {{productName}} from {{supplierName}}</p>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/each}}
+    </div>
+    {{/if}}
+{{/if}}
