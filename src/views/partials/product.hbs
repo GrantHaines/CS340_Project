@@ -1,4 +1,4 @@
-<div class="product" onclick="location.href='specificProduct/{{productID}}'">
+<div class="product">
     <div class="product-content">
         <p class="product-name centeredText">
             {{productName}}
@@ -15,5 +15,10 @@
         <p class="product-description">
             <span class="product-info">Price:</span> ${{price}}
         </p>
+        {{#if username}}
+            <form action="/specificProduct/{{productID}}" method="POST">
+                <button class="add-to-order-button" type="submit" name="Add to your orders" value="Add to your orders">Add to Cart</button>
+            </form>
+        {{/if}}
     </div>
 </div>

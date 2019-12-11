@@ -4,7 +4,7 @@
 //
 module.exports = {
   host: 'classmysql.engr.oregonstate.edu',
-  user: 'cs340_alonsom',
-  password: '5789',
-  database: 'cs340_alonsom'
+  user: 'cs340_hainesg',
+  password: 'charles77&',
+  database: 'cs340_hainesg'
 };

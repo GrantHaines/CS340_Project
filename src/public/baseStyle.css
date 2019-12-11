@@ -151,8 +151,7 @@ li.search-bar {
 }
 
 .product:hover {
-  transform: scale(1.1);
-  cursor: pointer;
+  transform: scale(1.05);
 }
 
 .specific-product-name {
@@ -381,6 +380,16 @@ li.search-bar {
 
 .product-notsold {
   color: red;
+}
+
+.search-container {
+  display: inline-flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+
+  width: 100%;
+  justify-content: center;
+  align-items: center;
 }
 
 .checkout-button {
