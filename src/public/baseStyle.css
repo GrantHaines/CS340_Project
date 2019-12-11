@@ -122,7 +122,6 @@ li.search-bar {
 
   width: 100%;
   justify-content: center;
-  align-items: center;
 }
 
 .all-products-container {
@@ -167,6 +166,14 @@ li.search-bar {
 
 .product-content {
   width: 100%;
+}
+
+.product-name {
+  font-size: 1.2em;
+}
+
+.product-info {
+  color: #666666;
 }
 
 #contentBox {
@@ -292,16 +299,14 @@ li.search-bar {
   height: 60px;
   width: 60px;
   border-radius: 30px;
-  font-size: 30px;
+  transition: all .2s ease-in-out;
+  box-shadow: 0 0 5px 2px grey;
 }
 
-#cart-button:hover, #cart-button:focus {
-  right: 27px;
-  bottom: 27px;
-  height: 66px;
-  width: 66px;
-  border-radius: 33px;
-  font-size: 36px;
+#cart-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px 3px grey;
+  cursor: pointer;
 }
 
 #cart-button:focus {
