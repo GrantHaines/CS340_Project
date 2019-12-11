@@ -323,7 +323,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
       close(req);
     }
     else {
-      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'})
+      res.render('signup', {'message': 'Account name already in use - Please try a different name'})
     }
   })
 });
@@ -359,7 +359,7 @@ app.post('/signup-supplier', connectDb, function(req, res) {
       close(req);
     }
     else {
-      res.render('signup-customer', {'message': 'Account name already in use - Please try a different name'});
+      res.render('signup', {'message': 'Account name already in use - Please try a different name'});
       close(req);
     }
   })
