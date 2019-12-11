@@ -15,6 +15,8 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const async = require("async");
 
+var passwordHash = require('password-hash');
+
 const app = express();
 
 // Configure handlebars
@@ -401,8 +403,7 @@ app.post('/login', connectDb, function(req, res) {
           console.log('ERROR: DB connection failed');
           throw err;
         }
-
-        if(data.length == 0 || data[0].password != req.body.password)
+        if(data.length == 0 || passwordHash.verify(data[0].password, req.body.password))
         res.render('login', {'message': 'Username not found/Password incorrect'});
         else {
           console.log('Login successful');
@@ -429,7 +430,7 @@ app.post('/login', connectDb, function(req, res) {
         throw err;
       }
 
-      if(data.length == 0 || data[0].password != req.body.password)
+      if(data.length == 0 || passwordHash.verify(data[0].password, req.body.password))
         res.render('login', {'message': 'Company name not found/Password incorrect'});
       else {
         console.log('Login successful');
@@ -462,6 +463,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
       console.log('ERROR: DB connection failed');
       throw err;
     }
+    req.body.password = passwordHash.generate(req.body.password);
 
     //If so add to DB
     if (data.length == 0) {
@@ -504,6 +506,7 @@ app.post('/signup-supplier', connectDb, function(req, res) {
     //If so add to DB
     if (data.length == 0) {
       console.log('Adding company to DB');
+      req.body.password = passwordHash.generate(req.body.password);
       var insertQuery = 'INSERT INTO Suppliers (supplierName, password) VALUES (?, ?)';
       req.db.query(insertQuery, [req.body.companyname, req.body.password], function(err, result) {
         if (err) {
