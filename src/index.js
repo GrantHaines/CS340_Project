@@ -13,6 +13,7 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
+const async = require("async");
 
 const app = express();
 
@@ -143,25 +144,39 @@ app.get('/cart', connectDb, function(req, res) {
   var allProducts = [];
   var response = getResponse(req);
   var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID';
-  for(var i = 0; i <= response.cart.length; i++) {
+ 
+  async.forEach(response.cart, function(value, next) {
+    var productID = value;
+    req.db.query(query,[productID], function(err, product) {
+     
+      if(err) next(err);
+      allProducts.push(product[0]);
+      next();
+    })
+  }, function(err) {
+    if(err) throw err;
+    console.log(allProducts);
+    res.render('cart', {allProducts});
+    close(req);
+  });
+});
+ 
+ /* for(var i = 0; i < response.cart.length; i++) {
     var productID = response.cart[i];
     req.db.query(query,[productID],function(err, product) {
       if(err){
         console.log('Error accesing DB');
         throw(err);
-      }if(i == response.cart.length) {
-        console.log(allProducts);
-        res.render('cart', Object.assign({allProducts}, response));
       }else{
         allProducts.push(product[0]);
+        console.log(allProducts);
       }
-
     });
   }
-  
+  res.render('cart', Object.assign( {allProducts}, response));
   close(req);
 });
-
+*/
 app.post('/specificProduct/:id', connectDb, function(req, res) {
   let id = req.params.id;
   if(req.session.cart == null){
