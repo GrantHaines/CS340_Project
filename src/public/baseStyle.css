@@ -234,6 +234,7 @@ li.search-bar {
   right: 0;
 }
 
+<<<<<<< HEAD
 #order-container {
   display: inline-flex;
   flex-wrap: wrap;
@@ -267,4 +268,32 @@ li.search-bar {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+=======
+#cart-button {
+  position: fixed;
+  border: none;
+  background-color: lightslategray;
+  color: white;
+  cursor: pointer;
+  right: 30px;
+  bottom: 30px;
+  height: 60px;
+  width: 60px;
+  border-radius: 30px;
+  font-size: 30px;
+
+}
+
+#cart-button:hover, #cart-button:focus {
+  right: 27px;
+  bottom: 27px;
+  height: 66px;
+  width: 66px;
+  border-radius: 33px;
+  font-size: 36px;
+}
+
+#cart-button:focus {
+  outline: none;
+>>>>>>> master
 }
