@@ -5,13 +5,13 @@
         <h2 class="centeredText">Sign up as a customer</h2>
         <form action="/signup-customer" method="POST">
             Username:<br>
-            <input type="text" name="username"><br>
+            <input type="text" name="username" maxlength="45"><br>
             First Name:<br>
-            <input type="text" name="firstname"><br>
+            <input type="text" name="firstname" maxlength="20"><br>
             Last Name:<br>
-            <input type="text" name="lastname"><br>
+            <input type="text" name="lastname" maxlength="20"><br>
             Password:<br>
-            <input type="password" name="password"><br>
+            <input type="password" name="password" maxlength="45" minlength="5"><br>
             <br>
             <input type="submit"><br>
         </form>
@@ -20,9 +20,9 @@
         <h2 class="centeredText">Sign up as a supplier</h2>
         <form action="/signup-supplier" method="POST">
             Company Name:<br>
-            <input type="text" name="companyname"><br>
+            <input type="text" name="companyname" maxlength="45"><br>
             Password:<br>
-            <input type="password" name="password"><br>
+            <input type="password" name="password" minlength="5"><br>
             <br>
             <input type="submit"><br>
         </form>
