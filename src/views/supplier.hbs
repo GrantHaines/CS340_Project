@@ -10,8 +10,7 @@
         <h1 class="centeredText">Products:</h1>
         <div class="supplier-container">
         {{#each data}}
-            <a class="surroundLink" href="/supplier-product?id={{productID}}">
-            <div class="product" onclick="location.href='supplier-product/{{productID}}'">
+            <a class="product surroundLink" href="/supplier-product?id={{productID}}">
                 <p class="product-name centeredText">{{productName}}</p>
                 <p class="product-description">
                     <span class="product-info">Category:</span> {{category}}
@@ -25,7 +24,6 @@
                 <p class="product-description">
                     <span class="product-info">Purchased:</span> {{numBought}}
                 </p>
-            </div>
             </a>
         {{/each}}
         </div>

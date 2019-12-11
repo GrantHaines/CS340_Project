@@ -377,3 +377,7 @@ li.search-bar {
 .product-supplier-box:not(:last-child) {
   border-bottom: 1px solid black;
 }
+
+.product-notsold {
+  color: red;
+}

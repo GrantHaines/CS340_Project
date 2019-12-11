@@ -223,7 +223,7 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
   console.log('---Got request for the supplier-product page---');
 
   if (req.session.suppliername) {
-    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
     var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
     var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
     req.db.query(sql, [req.session.suppliername, req.query.id], function(err, data) {
@@ -237,6 +237,7 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
           if (err) throw err;
 
           for (var i = 0; i < catalogItems.length; i++) {
+            if (catalogItems[i].price < data[0].maxPrice) catalogItems[i].notSold = true
             catalogItems[i].price = catalogItems[i].price.toFixed(2);
           }
 
