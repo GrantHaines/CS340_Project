@@ -14,6 +14,8 @@ const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
 
+const async = require("async");
+
 const app = express();
 
 // Configure handlebars
@@ -140,10 +142,39 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
 app.get('/customer', connectDb, function(req, res) {
   console.log('---Got request for the customer page---');
 
-  var response = getResponse(req);
-  res.render('customer', response);
-
-  close(req);
+  if (req.session.username) {
+    var query = 'SELECT Orders.orderID, totalCost, datePurchased FROM Orders WHERE accountName = ? ORDER BY datePurchased';
+    req.db.query(query, [req.session.username], function(err, order) {
+      if (err) {
+        console.log('ERROR: DB connection failed');
+        throw err;
+      }
+      //The following uses the async library to make sure all of the items in the orders are collected before finishing the whole query.
+      var orderInner = [];
+      var innerQuery = 'SELECT P.productName, C.price, I.itemsOrdered FROM ItemsinOrder I INNER JOIN Catalog C ON I.catalogID = C.catalogID INNER JOIN Products P ON C.productID = P.productID WHERE I.orderID = ?';
+      async.forEachOf(order, function(value, key, callback) {
+        req.db.query(innerQuery, [value.orderID], function(err, orderItems) {
+          if (err) throw err;
+          orderInner[key] = orderItems;
+          callback();
+        })
+      }, function(err) {
+        for (var i = 0; i < order.length; i++) {
+          order[i].datePurchased = order[i].datePurchased.toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+          order[i].totalCost = order[i].totalCost.toFixed(2);
+          order[i].orderItems = orderInner[i];
+        }
+        var response = getResponse(req);
+        //console.log(Object.assign({order}, response));
+        res.render('customer', Object.assign({order}, response));
+        close(req);
+      });
+    })
+  }
+  else {
+    var response = getResponse(req);
+    res.render('customer', response);
+  }
 });
 
 //Handler for supplier page
@@ -200,7 +231,7 @@ app.get('/signup-supplier', connectDb, function(req, res) {
 //Handler for login POST submission
 app.post('/login', connectDb, function(req, res) {
   console.log('---Got request for login action---');
-
+  //Log in as user
   if (req.body.username) {
     req.db.query('SELECT accountName, password, firstName, lastName FROM Customer WHERE accountName = ?', [req.body.username], function(err, data) {
         if (err) {
@@ -227,6 +258,7 @@ app.post('/login', connectDb, function(req, res) {
         close(req);
     })
   }
+  //Log in as company
   else if (req.body.companyname) {
     req.db.query('SELECT supplierName, password FROM Suppliers WHERE supplierName = ?', [req.body.companyname], function(err, data) {
       if (err) {
