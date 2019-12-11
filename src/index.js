@@ -15,8 +15,6 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const async = require("async");
 
-const async = require("async");
-
 const app = express();
 
 // Configure handlebars
