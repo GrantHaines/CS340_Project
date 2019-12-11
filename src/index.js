@@ -157,20 +157,24 @@ app.get('/cart', connectDb, function(req, res) {
   var response = getResponse(req);
   var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID';
  
-  async.forEach(response.cart, function(value, next) {
-    var productID = value.productID;
-    req.db.query(query,[productID], function(err, product) {
-     
-      if(err) next(err);
-      allProducts.push(product[0]);
-      next();
-    })
-  }, function(err) {
-    if(err) throw err;
-    console.log(allProducts);
-    res.render('cart', Object.assign({allProducts}, response));
-    close(req);
-  });
+  if(response.cart == null){
+    res.render('cart', Object.assign(response));
+  
+  
+  }else{
+    async.forEach(response.cart, function(value, next) {
+      var productID = value.productID;
+      req.db.query(query,[productID], function(err, product) {
+        if(err) next(err);
+        allProducts.push(product[0]);
+        next();
+      })
+     }, function(err) {
+      if(err) throw err;
+      res.render('cart', Object.assign({allProducts}, response));
+      close(req);
+    });
+   }
 });
  
 app.post('/specificProduct/:id', connectDb, function(req, res) {
@@ -187,13 +191,16 @@ app.post('/specificProduct/:id', connectDb, function(req, res) {
   req.db.query(numEntriesQuery, [id], function(err, numEntries) {
     if(err) throw(err);
     numberOfEntries = numEntries[0].numberOfEntries;
+    //Loop through cart array to see if this item is already in the user's cart
     for(var i = 0; i < response.cart.length; i++){
       if(response.cart[i].productID == id){
         alreadyInCart = true;
+        //If already in cart and there are not enough catalog entries render a fail message page.
         if(response.cart[i].numProducts >= numberOfEntries){
           console.log('Can not add to Cart. Not Enough Catalog Entries');
           res.render('cart-message-fail', Object.assign(response));
         }
+        //Else, add one to numProducts 
         else{
           console.log('In else statement');
           response.cart[i].numProducts++;
@@ -201,6 +208,7 @@ app.post('/specificProduct/:id', connectDb, function(req, res) {
         }
       }
     }
+    //If not already in cart create a new cartItem object to add to the cart array.
     if(!alreadyInCart){
       cartItem = {
         productID: id,
