@@ -14,7 +14,9 @@
             <textarea type="text" name="newdescription" rows="5" cols="30"></textarea>
             <br>
             Category:<br>
-            {{>categories}}<br><br>
+            <select name="category">
+            {{>categories}}
+            </select><br><br>
             <input type="submit"><br>
         </form>
     </div>

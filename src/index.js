@@ -120,8 +120,31 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('---Got request for the browse page---');
 
+  var filterName = null;
+  var filterCategory = null;
+  var filterSupplier = null;
+
+  console.log(req.query);
+
+  if (req.query.productname != null && req.query.productname != '')
+    filterName = 'P.productName LIKE \'%' + req.query.productname + '%\' ';
+  if (req.query.category != null && req.query.category != '')
+    filterCategory = 'P.category = \'' + req.query.category + '\' ';
+  if (req.query.supplier != null && req.query.supplier != '')
+    filterSupplier = 'P.supplierName LIKE \'%' + req.query.supplier + '%\' ';
+
   var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
   var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  if (filterName != null || filterCategory != null || filterSupplier != null) {
+    from += 'WHERE ';
+    if (filterName != null)
+      from += filterName;
+    if (filterCategory != null)
+      from += filterCategory;
+    if (filterSupplier != null)
+      from += filterSupplier;
+    console.log('from query =', from);
+  }
   var query = select + from +'GROUP BY P.productID HAVING numAvailable > 0 ORDER BY P.category, price DESC';
   req.db.query(query, function(
     err,
