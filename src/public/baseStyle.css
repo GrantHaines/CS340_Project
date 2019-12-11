@@ -382,8 +382,6 @@ li.search-bar {
   color: red;
 }
 
-
-
 .search-container {
   display: inline-flex;
   flex-wrap: wrap;
@@ -392,4 +390,23 @@ li.search-bar {
   width: 100%;
   justify-content: center;
   align-items: center;
+}
+
+.checkout-button {
+  display: inline-block;
+  border-radius: 4px;
+  background-color: 	dodgerblue;
+  border: none;
+  color: white;
+  text-align: center;
+  font-size: 23px;
+  padding: 20px;
+  width: 250px;
+  transition: all .5s;
+  cursor: pointer;
+  position: fixed;
+  margin: 5px;
+  left: 30px;
+  bottom: 30px;
+  height: 60px;
 }
