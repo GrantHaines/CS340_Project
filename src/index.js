@@ -254,6 +254,15 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
   }
 });
 
+//Handler for new product page
+app.get('/supplier-newproduct', connectDb, function(req, res, next) {
+  console.log('---Got request for the supplier-product page---');
+
+  var response = getResponse(req);
+  res.render('supplier-newproduct', response);
+  close(req);
+});
+
 //Handler for login page
 app.get('/login', connectDb, function(req, res) {
   console.log('---Got request for the login page---');

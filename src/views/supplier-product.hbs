@@ -3,9 +3,9 @@
 {{/unless}}
 {{#if suppliername}}
     <h1 class="centeredText">{{suppliername}} - Product Catalog Entries</h1>
-    <div class="supplier-container">
-        <div class="supplierButton" onclick="location.href='supplier'">Back to Supplier Page</div>
-    </div>
+    <a class="supplier-container surroundLink" href="/supplier">
+        <div class="supplierButton">Back to Supplier Page</div>
+    </a>
     <div class="supplier-container">
         <div class="product-supplier" onclick="location.href='supplier-product/{{productID}}'">
             <div class="product-supplier-box">
