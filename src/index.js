@@ -128,7 +128,7 @@ app.get('/browse', connectDb, function(req, res) {
     if (err) return next(err);
     var response = getResponse(req);
     for (var i = 0; i < products.length; i++) {
-      products[i].price = products[i].price.toFixed(2);
+      products[i].price = products[i].price.toFixed(2); //Convert price to have two decimal points
     }
     res.render('browse', Object.assign({products}, response));
     close(req);
@@ -215,6 +215,41 @@ app.get('/supplier', connectDb, function(req, res) {
   else {
     var response = getResponse(req);
     res.render('supplier', response);
+  }
+});
+
+//Handler for supplier-product page
+app.get('/supplier-product', connectDb, function(req, res, next) {
+  console.log('---Got request for the supplier-product page---');
+
+  if (req.session.suppliername) {
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+    var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
+    req.db.query(sql, [req.session.suppliername, req.query.id], function(err, data) {
+      if (err) return next(err);
+      if (data.length === 0) {
+        console.log(`Product with id ${id} not found`);
+        close(req);
+      } else {
+        var innerQuery = 'SELECT C.catalogID, C.price, C.numberOfEntries, C.productID FROM Catalog C WHERE productID = ? AND numberOfEntries > 0';
+        req.db.query(innerQuery, [data[0].productID], function(err, catalogItems) {
+          if (err) throw err;
+
+          for (var i = 0; i < catalogItems.length; i++) {
+            catalogItems[i].price = catalogItems[i].price.toFixed(2);
+          }
+
+          var response = getResponse(req);
+          res.render('supplier-product', Object.assign(data[0], response, {catalogItems}));
+          close(req);
+        })
+      }
+    });
+  }
+  else {
+    res.render('supplier-product');
+    close(req);
   }
 });
 

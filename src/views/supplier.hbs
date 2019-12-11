@@ -2,7 +2,7 @@
 <h1 class="centeredText">Sorry, you have to log in to access this page.</h1>
 {{/unless}}
 {{#if suppliername}}
-    <h1 class="centeredText">{{suppliername}} Supplier Page</h1>
+    <h1 class="centeredText">{{suppliername}} - Supplier Page</h1>
     <div class="supplier-container">
         <div class="supplierButton">Add A New Product</div>
     </div>
@@ -10,7 +10,8 @@
         <h1 class="centeredText">Products:</h1>
         <div class="supplier-container">
         {{#each data}}
-            <div class="product">
+            <a class="surroundLink" href="/supplier-product?id={{productID}}">
+            <div class="product" onclick="location.href='supplier-product/{{productID}}'">
                 <p class="product-name centeredText">{{productName}}</p>
                 <p class="product-description">
                     <span class="product-info">Category:</span> {{category}}
@@ -25,6 +26,7 @@
                     <span class="product-info">Purchased:</span> {{numBought}}
                 </p>
             </div>
+            </a>
         {{/each}}
         </div>
     {{/if}}
