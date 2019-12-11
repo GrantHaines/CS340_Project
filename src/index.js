@@ -86,6 +86,7 @@ function deleteSession(req) {
   delete req.session.firstName;
   delete req.session.lastName;
   delete req.session.suppliername;
+  delete req.session.cart;
 }
 
 /**
@@ -130,7 +131,7 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
       info(`Product with id ${id} not found`);
     } else {
       var response = getResponse(req);
-      res.render('specificProduct', Object.assign({productDetails, id}, response));
+      res.render('specificProduct', Object.assign({productDetails}, response));
     }
     close(req);
   });
@@ -139,10 +140,26 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
 app.get('/cart', connectDb, function(req, res) {
 
   console.log('---Got request for the cart page');
+  var allProducts = [];
   var response = getResponse(req);
-  console.log(response.cart);
+  var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID';
+  for(var i = 0; i <= response.cart.length; i++) {
+    var productID = response.cart[i];
+    req.db.query(query,[productID],function(err, product) {
+      if(err){
+        console.log('Error accesing DB');
+        throw(err);
+      }if(i == response.cart.length) {
+        console.log(allProducts);
+        res.render('cart', Object.assign({allProducts}, response));
+      }else{
+        allProducts.push(product[0]);
+      }
 
-
+    });
+  }
+  
+  close(req);
 });
 
 app.post('/specificProduct/:id', connectDb, function(req, res) {
