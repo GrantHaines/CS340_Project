@@ -99,13 +99,15 @@ app.get('/', connectDb, function(req, res, next) {
   console.log('---Got request for the home page---');
 
   //info('Rendering all the products');
-  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID ORDER BY C.numberOfEntries DESC LIMIT 3', function(
-    err,
-    products
-  ) {
+  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(itemsOrdered) AS numBought ';
+  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  var query = select + from +'GROUP BY P.productID ORDER BY numBought DESC LIMIT 4';
+  req.db.query(query, function(err, products) {
     if (err) return next(err);
     for (var i = 0; i < products.length; i++) {
       products[i].price = products[i].price.toFixed(2);
+      if (products[i].numBought == null) products[i].numBought = 0;
+      if (products[i].numAvailable == null) products[i].numAvailable = 0;
     }
     var response = getResponse(req);
     res.render('home', Object.assign({products},response));
@@ -116,7 +118,10 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('---Got request for the browse page---');
 
-  req.db.query('SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = C.productID', function(
+  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
+  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+  var query = select + from +'GROUP BY P.productID ORDER BY numAvailable DESC LIMIT 4';
+  req.db.query(query, function(
     err,
     products
   ) {
@@ -171,7 +176,6 @@ app.get('/customer', connectDb, function(req, res) {
           order[i].orderItems = orderInner[i];
         }
         var response = getResponse(req);
-        //console.log(Object.assign({order}, response));
         res.render('customer', Object.assign({order}, response));
         close(req);
       });
@@ -187,10 +191,31 @@ app.get('/customer', connectDb, function(req, res) {
 app.get('/supplier', connectDb, function(req, res) {
   console.log('---Got request for the supplier page---');
 
-  var response = getResponse(req);
-  res.render('supplier', response);
-
-  close(req);
+  if (req.session.suppliername) {
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
+    var query = select + from +'WHERE P.supplierName = ? GROUP BY P.productID';
+    req.db.query(query, [req.session.suppliername], function(err, data) {
+      if (err) {
+        console.log('ERROR: DB connection failed');
+        throw err;
+      }
+      if (data.length === 0)
+        data = false;
+      
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].numBought == null) data[i].numBought = 0;
+        if (data[i].numAvailable == null) data[i].numAvailable = 0;
+      }
+      var response = getResponse(req);
+      res.render('supplier', Object.assign({data}, response));
+      close(req);
+    })
+  }
+  else {
+    var response = getResponse(req);
+    res.render('supplier', response);
+  }
 });
 
 //Handler for login page
