@@ -15,12 +15,13 @@
         <div class="order">
             <div class="orderTop">
                 <p>Purchased: {{this.datePurchased}}</p>
-                <p>Cost: ${{this.totalCost}}</p>
+                <p>Total: ${{this.totalCost}}</p>
             </div>
             <div>
+                Items Ordered:
                 {{#each orderItems}}
                 <div>
-                    <p>{{productName}}: {{itemsOrdered}} ordered</p>
+                    <p>{{itemsOrdered}} of {{productName}} from {{supplierName}}</p>
                 </div>
                 {{/each}}
             </div>
