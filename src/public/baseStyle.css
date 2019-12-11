@@ -145,6 +145,8 @@ li.search-bar {
   width: 100%;
   max-width: 500px;
 
+  color: black;
+
   box-shadow: 0 0 15px 2px grey;
 }
 
@@ -357,7 +359,6 @@ li.search-bar {
 
 .surroundLink {
   text-decoration: none;
-  color: inherit;
 }
 
 .product-supplier {

@@ -14,8 +14,6 @@ const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
 
-const async = require("async");
-
 const app = express();
 
 // Configure handlebars
@@ -121,7 +119,7 @@ app.get('/browse', connectDb, function(req, res) {
 
   var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
   var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-  var query = select + from +'GROUP BY P.productID ORDER BY numAvailable DESC LIMIT 4';
+  var query = select + from +'GROUP BY P.productID HAVING numAvailable > 0 ORDER BY P.category, price DESC';
   req.db.query(query, function(
     err,
     products
@@ -266,7 +264,7 @@ app.get('/supplier', connectDb, function(req, res) {
   if (req.session.suppliername) {
     var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
     var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-    var query = select + from +'WHERE P.supplierName = ? GROUP BY P.productID';
+    var query = select + from +'WHERE P.supplierName = ? GROUP BY P.productID ORDER BY P.productID DESC';
     req.db.query(query, [req.session.suppliername], function(err, data) {
       if (err) {
         console.log('ERROR: DB connection failed');
@@ -295,19 +293,22 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
   console.log('---Got request for the supplier-product page---');
 
   if (req.session.suppliername) {
-    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, (SELECT MAX(price) FROM Catalog WHERE productID = 5 AND numberOfEntries > 0) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
     var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
     var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
     req.db.query(sql, [req.session.suppliername, req.query.id], function(err, data) {
       if (err) return next(err);
+      console.log(data);
       if (data.length === 0) {
-        console.log(`Product with id ${id} not found`);
         close(req);
       } else {
-        var innerQuery = 'SELECT C.catalogID, C.price, C.numberOfEntries, C.productID FROM Catalog C WHERE productID = ? AND numberOfEntries > 0';
+        var innerQuery = 'SELECT C.catalogID, C.price, C.numberOfEntries, C.productID FROM Catalog C WHERE productID = ? AND numberOfEntries > 0 ORDER BY price DESC';
         req.db.query(innerQuery, [data[0].productID], function(err, catalogItems) {
           if (err) throw err;
 
+          if (data[0].numBought == null) data[0].numBought = 0;
+          if (data[0].numAvailable == null) data[0].numAvailable = 0;
+          
           for (var i = 0; i < catalogItems.length; i++) {
             if (catalogItems[i].price < data[0].maxPrice) catalogItems[i].notSold = true
             catalogItems[i].price = catalogItems[i].price.toFixed(2);
@@ -356,6 +357,59 @@ app.get('/signup', connectDb, function(req, res) {
   res.render('signup', response);
 
   close(req);
+});
+
+/*
+  POST submission handlers
+*/
+
+//Handler for making the numEntries from a catalog entry 0
+app.post('/supplier-deletecatalog', connectDb, function(req, res) {
+  console.log('---Got request for removing entries from a catalog entry---');
+
+  if (req.session.suppliername) {
+    var sqlquery = 'UPDATE Catalog SET numberOfEntries = ? WHERE catalogID = ?';
+    req.db.query(sqlquery, ['0', req.body.catalogID], function (err, result) {
+      if (err) throw err;
+
+      close(req);
+      res.redirect('/supplier-product?id=' + req.body.productID);
+    })
+  }
+  else close(req);
+});
+
+//Handler for new catalog entry POST submission
+app.post('/supplier-newcatalog', connectDb, function(req, res) {
+  console.log('---Got request for a new catalog entry---');
+
+  if (req.session.suppliername) {
+    var sqlquery = 'INSERT INTO Catalog (price, numberOfEntries, productID) VALUES (?, ?, ?)';
+    req.db.query(sqlquery, [req.body.newprice, req.body.numentries, req.body.productID], function (err, result) {
+      if (err) throw err;
+
+      close(req);
+      res.redirect('/supplier-product?id=' + req.body.productID);
+    })
+  }
+  else close(req);
+});
+
+//Handler for newprduct POST submission
+app.post('/supplier-newproduct', connectDb, function(req, res) {
+  console.log('---Got request for new product---');
+  
+  if (req.session.suppliername) {
+    var sqlquery = 'INSERT INTO Products (productName, category, description, supplierName) VALUES (?, ?, ?, ?)';
+    req.db.query(sqlquery, [req.body.newname, req.body.category, req.body.newdescription, req.session.suppliername], function(err, result) {
+      if (err) throw err;
+
+      if (result.affectedRows > 0) {
+        close(req);
+        res.redirect('/supplier');
+      }
+    })
+  }
 });
 
 //Handler for login POST submission

@@ -2,12 +2,12 @@
 <h1 class="centeredText">Sorry, you have to log in to access this page.</h1>
 {{/unless}}
 {{#if suppliername}}
-    <h1 class="centeredText">{{suppliername}} - Product Catalog Entries</h1>
-    <a class="supplier-container surroundLink" href="/supplier">
-        <div class="supplierButton">Back to Supplier Page</div>
-    </a>
+    <h1 class="centeredText">{{suppliername}} - "{{productName}}" Catalog Entries</h1>
     <div class="supplier-container">
-        <div class="product-supplier" onclick="location.href='supplier-product/{{productID}}'">
+        <a class="supplierButton surroundLink" href="/supplier">Back to Supplier Page</a>
+    </div>
+    <div class="supplier-container">
+        <div class="product-supplier">
             <div class="product-supplier-box">
                 <p class="product-name centeredText">{{productName}}</p>
                 <p class="product-description">
@@ -34,9 +34,25 @@
                 <p class="product-description">
                     <span class="product-info">Entries remaining:</span> {{numberOfEntries}}
                 </p>
-                {{#if notSold}}<p class="centeredText product-notsold">Not Yet Available for Sale</p>{{/if}}</p>
+                <form action="/supplier-deletecatalog" method="POST">
+                    <input type="hidden" name="catalogID" value="{{catalogID}}">
+                    <input type="hidden" name="productID" value="{{productID}}">
+                    <button type="submit">Delete Catalog Entry</button>
+                </form>
+                {{#if notSold}}<p class="centeredText product-notsold">Entry Not Yet Available for Sale</p>{{/if}}</p>
             </div>
             {{/each}}
+            <div class="product-supplier-box">
+                <p class="centeredText">Add a New Catalog Entry</p>
+                <form action="/supplier-newcatalog" method="POST">
+                    Price:<br>
+                    $<input type="number" name="newprice" step=".01" max="100000"><br>
+                    Number of Entries:<br>
+                    <input type="number" name="numentries" max="1000" step="1"><br>
+                    <input type="hidden" name="productID" value="{{productID}}">
+                    <input type="submit">
+                </form>
+            </div>
         </div>
     </div>
 {{/if}}
