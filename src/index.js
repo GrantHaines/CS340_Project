@@ -13,7 +13,6 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
-const async = require("async");
 
 const app = express();
 
@@ -156,46 +155,68 @@ app.get('/cart', connectDb, function(req, res) {
   var response = getResponse(req);
   var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID';
  
-  async.forEach(response.cart, function(value, next) {
-    var productID = value;
-    req.db.query(query,[productID], function(err, product) {
-     
-      if(err) next(err);
-      allProducts.push(product[0]);
-      next();
-    })
-  }, function(err) {
-    if(err) throw err;
-    console.log(allProducts);
-    res.render('cart', {allProducts});
-    close(req);
-  });
+  if(response.cart == null){
+    res.render('cart', Object.assign(response));
+  
+  
+  }else{
+    async.forEach(response.cart, function(value, next) {
+      var productID = value.productID;
+      req.db.query(query,[productID], function(err, product) {
+        if(err) next(err);
+        allProducts.push(product[0]);
+        next();
+      })
+     }, function(err) {
+      if(err) throw err;
+      res.render('cart', Object.assign({allProducts}, response));
+      close(req);
+    });
+   }
 });
  
- /* for(var i = 0; i < response.cart.length; i++) {
-    var productID = response.cart[i];
-    req.db.query(query,[productID],function(err, product) {
-      if(err){
-        console.log('Error accesing DB');
-        throw(err);
-      }else{
-        allProducts.push(product[0]);
-        console.log(allProducts);
-      }
-    });
-  }
-  res.render('cart', Object.assign( {allProducts}, response));
-  close(req);
-});
-*/
 app.post('/specificProduct/:id', connectDb, function(req, res) {
   let id = req.params.id;
   if(req.session.cart == null){
     req.session.cart = [];
   }
-  req.session.cart.push(id);
-  res.render('cart-message');
-  close(req);
+
+  var response = getResponse(req);
+  var numberOfEntries;
+  var cartItem;
+  var alreadyInCart = false;
+  numEntriesQuery = 'SELECT C.numberOfEntries FROM Catalog C, Products P WHERE P.productID = ? AND P.productID = C.productID';
+  req.db.query(numEntriesQuery, [id], function(err, numEntries) {
+    if(err) throw(err);
+    numberOfEntries = numEntries[0].numberOfEntries;
+    //Loop through cart array to see if this item is already in the user's cart
+    for(var i = 0; i < response.cart.length; i++){
+      if(response.cart[i].productID == id){
+        alreadyInCart = true;
+        //If already in cart and there are not enough catalog entries render a fail message page.
+        if(response.cart[i].numProducts >= numberOfEntries){
+          console.log('Can not add to Cart. Not Enough Catalog Entries');
+          res.render('cart-message-fail', Object.assign(response));
+        }
+        //Else, add one to numProducts 
+        else{
+          console.log('In else statement');
+          response.cart[i].numProducts++;
+          res.render('cart-message', Object.assign(response));
+        }
+      }
+    }
+    //If not already in cart create a new cartItem object to add to the cart array.
+    if(!alreadyInCart){
+      cartItem = {
+        productID: id,
+        numProducts: 1
+      };
+      req.session.cart.push(cartItem);
+      res.render('cart-message', Object.assign(response));
+      close(req);
+    }
+  });
 });
 
 //Handler for customer page
