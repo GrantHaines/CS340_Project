@@ -75,7 +75,7 @@ function getResponse(req) {
   else if (req.session.suppliername) {
     var response = {suppliername: req.session.suppliername};
   }
-  console.log(response);
+  console.log('Response:', response);
   return response;
 }
 
@@ -104,6 +104,9 @@ app.get('/', connectDb, function(req, res, next) {
     products
   ) {
     if (err) return next(err);
+    for (var i = 0; i < products.length; i++) {
+      products[i].price = products[i].price.toFixed(2);
+    }
     var response = getResponse(req);
     res.render('home', Object.assign({products},response));
     close(req);
@@ -119,6 +122,9 @@ app.get('/browse', connectDb, function(req, res) {
   ) {
     if (err) return next(err);
     var response = getResponse(req);
+    for (var i = 0; i < products.length; i++) {
+      products[i].price = products[i].price.toFixed(2);
+    }
     res.render('browse', Object.assign({products}, response));
     close(req);
   });
@@ -151,7 +157,7 @@ app.get('/customer', connectDb, function(req, res) {
       }
       //The following uses the async library to make sure all of the items in the orders are collected before finishing the whole query.
       var orderInner = [];
-      var innerQuery = 'SELECT P.productName, C.price, I.itemsOrdered FROM ItemsinOrder I INNER JOIN Catalog C ON I.catalogID = C.catalogID INNER JOIN Products P ON C.productID = P.productID WHERE I.orderID = ?';
+      var innerQuery = 'SELECT P.productName, C.price, I.itemsOrdered, P.supplierName FROM ItemsinOrder I INNER JOIN Catalog C ON I.catalogID = C.catalogID INNER JOIN Products P ON C.productID = P.productID WHERE I.orderID = ?';
       async.forEachOf(order, function(value, key, callback) {
         req.db.query(innerQuery, [value.orderID], function(err, orderItems) {
           if (err) throw err;
@@ -206,24 +212,6 @@ app.get('/signup', connectDb, function(req, res) {
 
   var response = getResponse(req);
   res.render('signup', response);
-
-  close(req);
-});
-
-app.get('/signup-customer', connectDb, function(req, res) {
-  console.log('---Got request for the signup-customer page---');
-
-  var response = getResponse(req);
-  res.render('signup-customer', response);
-
-  close(req);
-});
-
-app.get('/signup-supplier', connectDb, function(req, res) {
-  console.log('---Got request for the signup-supplier page---');
-
-  var response = getResponse(req);
-  res.render('signup-supplier', response);
 
   close(req);
 });
