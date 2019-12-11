@@ -136,13 +136,23 @@ app.get('/specificProduct/:id', connectDb, function(req, res, next) {
   });
 });
 
+app.get('/cart', connectDb, function(req, res) {
+
+  console.log('---Got request for the cart page');
+  var response = getResponse(req);
+  console.log(response.cart);
+
+
+});
+
 app.post('/specificProduct/:id', connectDb, function(req, res) {
   let id = req.params.id;
   if(req.session.cart == null){
     req.session.cart = [];
   }
   req.session.cart.push(id);
-  console.log(req.session.cart);
+  res.render('cart-message');
+  close(req);
 });
 
 //Handler for customer page
