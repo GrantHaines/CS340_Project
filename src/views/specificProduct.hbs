@@ -3,6 +3,8 @@
        {{> productDetails this}}
     {{/each}} 
     {{#if username}}
-    <button class="add-to-order-button" style="vertical-align: middle;"><span>Add to your orders</span></button>
+    <form action="" method="POST">
+      <input class="add-to-order-button" type="submit" name="Add to your orders" value="Add to your orders" />
+    </form>
     {{/if}}
 </main>
