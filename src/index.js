@@ -128,11 +128,11 @@ app.get('/browse', connectDb, function(req, res) {
   var orderBy = null;
 
   if (req.query.productname != null && req.query.productname != '')
-    filterName = 'productName LIKE \'%' + req.query.productname + '%\' ';
+    filterName = 'productName LIKE \'%' + req.query.productname + '%\'';
   if (req.query.category != null && req.query.category != '')
-    filterCategory = 'category = \'' + req.query.category + '\' ';
+    filterCategory = 'category = \'' + req.query.category + '\'';
   if (req.query.supplier != null && req.query.supplier != '')
-    filterSupplier = 'supplierName LIKE \'%' + req.query.supplier + '%\' ';
+    filterSupplier = 'supplierName LIKE \'%' + req.query.supplier + '%\'';
 
   if (req.query.orderBy != null && req.query.orderBy != '')
     orderBy = ' ORDER BY ' + req.query.orderBy;
@@ -140,21 +140,40 @@ app.get('/browse', connectDb, function(req, res) {
   var sqlquery = 'SELECT * FROM browse';
 
   if (filterName != null || filterCategory != null || filterSupplier != null) {
-    sqlquery += ' WHERE ';
-    if (filterName != null)
-      sqlquery += filterName;
-    if (filterCategory != null)
-      sqlquery += filterCategory;
-    if (filterSupplier != null)
-      sqlquery += filterSupplier;
-    
+    var oneDone = false;
+    if (filterName != null) {
+      if (oneDone == false) {
+        sqlquery += ' WHERE ' + filterName;
+        oneDone = true;
+      }
+      else
+        sqlquery += ' AND ' + filterName;
+    }
+    if (filterCategory != null) {
+      if (oneDone == false) {
+        sqlquery += ' WHERE ' + filterCategory;
+        oneDone = true;
+    }
+      else
+        sqlquery += ' AND ' + filterCategory;
+    }
+    if (filterSupplier != null) {
+      if (oneDone == false) {
+        sqlquery += ' WHERE ' + filterSupplier;
+        oneDone = true;
+      }
+      else
+        sqlquery += ' AND ' + filterSupplier;
+    }
     console.log('browse conditions =', sqlquery);
   }
 
   if (orderBy != null)
     sqlquery += orderBy;
   else
-    sqlquery += 'ORDER BY category, numAvailable DESC'
+    sqlquery += ' ORDER BY category, numAvailable DESC'
+    
+  console.log('query =', sqlquery);
 
   req.db.query(sqlquery, function(
     err,
@@ -400,29 +419,27 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
   console.log('---Got request for the supplier-product page---');
 
   if (req.session.suppliername) {
-    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, (SELECT MAX(price) FROM Catalog WHERE productID = ? AND numberOfEntries > 0) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
-    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-    var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
-    req.db.query(sql, [req.query.id, req.session.suppliername, req.query.id], function(err, data) {
+    var sql = 'CALL getSupplierProduct(?, ?)'
+    req.db.query(sql, [req.query.id, req.session.suppliername], function(err, data) {
       if (err) return next(err);
-      console.log(data);
-      if (data.length === 0) {
+      //console.log(data);
+      if (data[0].length === 0) {
         close(req);
       } else {
         var innerQuery = 'SELECT C.catalogID, C.price, C.numberOfEntries, C.productID FROM Catalog C WHERE productID = ? AND numberOfEntries > 0 ORDER BY price DESC';
-        req.db.query(innerQuery, [data[0].productID], function(err, catalogItems) {
+        req.db.query(innerQuery, [data[0][0].productID], function(err, catalogItems) {
           if (err) throw err;
 
-          if (data[0].numBought == null) data[0].numBought = 0;
-          if (data[0].numAvailable == null) data[0].numAvailable = 0;
+          if (data[0][0].numBought == null) data[0][0].numBought = 0;
+          if (data[0][0].numAvailable == null) data[0][0].numAvailable = 0;
           
           for (var i = 0; i < catalogItems.length; i++) {
-            if (catalogItems[i].price < data[0].maxPrice) catalogItems[i].notSold = true
+            if (catalogItems[i].price < data[0][0].maxPrice) catalogItems[i].notSold = true
             catalogItems[i].price = catalogItems[i].price.toFixed(2);
           }
 
           var response = getResponse(req);
-          res.render('supplier-product', Object.assign(data[0], response, {catalogItems}));
+          res.render('supplier-product', Object.assign(data[0][0], response, {catalogItems}));
           close(req);
         })
       }
