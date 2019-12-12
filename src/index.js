@@ -276,9 +276,7 @@ app.get('/supplier', connectDb, function(req, res) {
   console.log('---Got request for the supplier page---');
 
   if (req.session.suppliername) {
-    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
-    var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-    var query = select + from +'WHERE P.supplierName = ? GROUP BY P.productID ORDER BY P.productID DESC';
+    var query = 'CALL supplierProducts(?)';
     req.db.query(query, [req.session.suppliername], function(err, data) {
       if (err) {
         console.log('ERROR: DB connection failed');
