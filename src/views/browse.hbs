@@ -5,7 +5,16 @@
     <form>
         Name: <input type="text" name="productname"><br>
         Category: <select name="category"><option value=""></option>{{> categories}}</select><br>
-        Supplier: <input type="text" name="supplier"><br>
+        Supplier: <input type="text" name="supplier"><br><br>
+        Order By:
+            <select name="orderBy">
+                <option value=""></option>
+                <option value="productName">Product Name</option>
+                <option value="category">Category</option>
+                <option value="supplierName">Supplier</option>
+                <option value="maxPrice">Price</option>
+                <option value="numAvailable DESC">Number Available</option>
+            </select><br>
         <button type="submit">Filter</button>
     </form>
     <form>

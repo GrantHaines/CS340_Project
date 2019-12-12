@@ -4,8 +4,9 @@
 {{#if username}}
     <h1 class="centeredText">Welcome, {{firstName}} {{lastName}}</h1>
     {{#if cart}}
-    <h2 class="centeredText">Your Cart:</h2>
-
+    <div class="supplier-container">
+        <a class="surroundLink supplierButton" href="/cart">View Your Cart</a>
+    </div>
     {{/if}}
     {{#if order}}
     <h2 class="centeredText">Your Past Orders:</h2>

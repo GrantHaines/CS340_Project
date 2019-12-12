@@ -220,12 +220,15 @@ li.search-bar {
   border: none;
   color: white;
   text-align: center;
-  font-size: 23px;
+  font-size: 20px;
   padding: 20px;
-  width: 250px;
+  width: 200px;
   transition: all .5s;
   cursor: pointer;
   margin: 5px;
+
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .add-to-order-button span {
@@ -324,19 +327,22 @@ li.search-bar {
 }
 
 .supplierButton {
-  font-weight: bold;
-  font-size: 1.3em;
-
-  border-radius: 15px;
-  box-shadow: 0 0 15px 2px grey;
-
-  padding: 15px;
-  margin: 15px;
-  
-  transition: all .2s ease-in-out;
-
-  background-color: #121921;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: 	dodgerblue;
+  border: none;
   color: white;
+  text-align: center;
+  font-size: 20px;
+  padding: 20px;
+  width: 200px;
+  transition: all .5s;
+  cursor: pointer;
+  margin: 5px;
+  box-shadow: 0 0 10px 1px grey;
+
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .supplierButton:hover {
@@ -408,5 +414,7 @@ li.search-bar {
   margin: 5px;
   left: 30px;
   bottom: 30px;
-  height: 60px;
+
+  padding-top: 10px;
+  padding-bottom: 10px;
 }

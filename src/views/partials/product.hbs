@@ -13,12 +13,17 @@
             <span class="product-info">Description:</span> {{description}}
         </p>
         <p class="product-description">
-            <span class="product-info">Price:</span> ${{price}}
+            <span class="product-info">Price:</span> ${{maxPrice}}
+        </p>
+        <p class="product-description">
+            <span class="product-info">Amount Left:</span> {{numAvailable}}
         </p>
         {{#if username}}
+            <div class="supplier-container">
             <form action="/specificProduct/{{productID}}" method="POST">
                 <button class="add-to-order-button" type="submit" name="Add to your orders" value="Add to your orders">Add to Cart</button>
             </form>
+            </div>
         {{/if}}
     </div>
 </div>
