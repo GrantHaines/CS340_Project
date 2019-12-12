@@ -10,7 +10,7 @@
     {{#if data}}
         <h1 class="centeredText">Products:</h1>
         <div class="supplier-container">
-        {{#each data}}
+        {{#each data.[0]}}
             <a class="product surroundLink" href="/supplier-product?id={{productID}}">
                 <p class="product-name centeredText">{{productName}}</p>
                 <p class="product-description">

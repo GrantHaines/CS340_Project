@@ -285,11 +285,12 @@ app.get('/supplier', connectDb, function(req, res) {
       if (data.length === 0)
         data = false;
       
-      for (var i = 0; i < data.length; i++) {
-        if (data[i].numBought == null) data[i].numBought = 0;
-        if (data[i].numAvailable == null) data[i].numAvailable = 0;
+      for (var i = 0; i < data[0].length; i++) {
+        if (data[0][i].numBought == null) data[0][i].numBought = 0;
+        if (data[0][i].numAvailable == null) data[0][i].numAvailable = 0;
       }
       var response = getResponse(req);
+      console.log(Object.assign({data}, response));
       res.render('supplier', Object.assign({data}, response));
       close(req);
     })
