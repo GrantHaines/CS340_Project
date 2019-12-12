@@ -1,7 +1,25 @@
 <h2 class="page-title centeredText">All Items in Your Cart</h1> 
 <main class="all-products-container">
     {{#each allProducts}}
-       {{> product this}}
+    <div class="product">
+        <div class="product-content">
+            <p class="product-name centeredText">
+                {{numbought}} of {{productName}}
+            </p>
+            <p class="product-description">
+                <span class="product-info">Category:</span> {{category}}
+            </p>
+            <p class="product-description">
+                <span class="product-info">Supplier:</span> {{supplierName}}
+            </p>
+            <p class="product-description">
+                <span class="product-info">Description:</span> {{description}}
+            </p>
+            <p class="product-description">
+                <span class="product-info">Price:</span> ${{price}}
+            </p>
+        </div>
+    </div>
     {{/each}} 
     <form action="" method="POST">
       <input class="checkout-button" type="submit" name="Checkout" value="Checkout" />

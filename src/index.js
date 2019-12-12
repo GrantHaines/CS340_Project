@@ -103,13 +103,11 @@ app.get('/', connectDb, function(req, res, next) {
   console.log('---Got request for the home page---');
 
   //info('Rendering all the products');
-  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(itemsOrdered) AS numBought ';
-  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-  var query = select + from +'GROUP BY P.productID ORDER BY numBought DESC LIMIT 4';
+  var query = 'SELECT * FROM browse ORDER BY numBought DESC LIMIT 4';
   req.db.query(query, function(err, products) {
     if (err) return next(err);
     for (var i = 0; i < products.length; i++) {
-      products[i].price = products[i].price.toFixed(2);
+      products[i].maxPrice = products[i].maxPrice.toFixed(2);
       if (products[i].numBought == null) products[i].numBought = 0;
       if (products[i].numAvailable == null) products[i].numAvailable = 0;
       if (req.session.username)
@@ -127,6 +125,7 @@ app.get('/browse', connectDb, function(req, res) {
   var filterName = null;
   var filterCategory = null;
   var filterSupplier = null;
+  var orderBy = null;
 
   if (req.query.productname != null && req.query.productname != '')
     filterName = 'productName LIKE \'%' + req.query.productname + '%\' ';
@@ -134,6 +133,9 @@ app.get('/browse', connectDb, function(req, res) {
     filterCategory = 'category = \'' + req.query.category + '\' ';
   if (req.query.supplier != null && req.query.supplier != '')
     filterSupplier = 'supplierName LIKE \'%' + req.query.supplier + '%\' ';
+
+  if (req.query.orderBy != null && req.query.orderBy != '')
+    orderBy = ' ORDER BY ' + req.query.orderBy;
 
   var sqlquery = 'SELECT * FROM browse';
 
@@ -145,8 +147,14 @@ app.get('/browse', connectDb, function(req, res) {
       sqlquery += filterCategory;
     if (filterSupplier != null)
       sqlquery += filterSupplier;
+    
     console.log('browse conditions =', sqlquery);
   }
+
+  if (orderBy != null)
+    sqlquery += orderBy;
+  else
+    sqlquery += 'ORDER BY category, numAvailable DESC'
 
   req.db.query(sqlquery, function(
     err,
@@ -155,7 +163,7 @@ app.get('/browse', connectDb, function(req, res) {
     if (err) return next(err);
     var response = getResponse(req);
     for (var i = 0; i < products.length; i++) {
-      products[i].price = products[i].price.toFixed(2); //Convert price to have two decimal points
+      products[i].maxPrice = products[i].maxPrice.toFixed(2); //Convert price to have two decimal points
       if (req.session.username)
         products[i].username = req.session.username
     }
@@ -169,13 +177,12 @@ app.get('/cart', connectDb, function(req, res) {
   console.log('---Got request for the cart page');
   var allProducts = [];
   var response = getResponse(req);
-  var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, C.price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID';
+  var query = 'SELECT P.productID, P.productName, P.description, P.supplierName, P.category, Max(C.price) AS price FROM Products P, Catalog C WHERE P.productID = ? AND P.productID = C.productID AND C.numberOfEntries > 0';
  
-  if(response.cart == null){
-    res.render('cart', Object.assign(response));
-  
-  
-  }else{
+  if (!req.session.username) {
+    res.render('cart', response);
+    close(req);
+  } else {
     async.forEach(response.cart, function(value, next) {
       var productID = value.productID;
       req.db.query(query,[productID], function(err, product) {
@@ -185,6 +192,11 @@ app.get('/cart', connectDb, function(req, res) {
       })
      }, function(err) {
       if(err) throw err;
+      
+      for (var i = 0; i < allProducts.length; i++) {
+        allProducts[i].numbought = req.session.cart[i].numProducts;
+      }
+
       res.render('cart', Object.assign({allProducts}, response));
       close(req);
     });
@@ -208,10 +220,10 @@ app.post('/cart', connectDb, function(req, res) {
   ('00' + date.getUTCDate()).slice(-2);
 
   
-  var catalogID;
+  var catalogID = [];
   var accountName = response.username;
   var cart = response.cart;
-  var catIDQuery = 'SELECT C.catalogID, C.price FROM Catalog C WHERE C.productID = ?'; 
+  var catIDQuery = 'SELECT C.catalogID, C.price FROM Catalog C WHERE C.productID = ? AND C.numberOfEntries >= ?'; 
   var insertIntoOrders = 'INSERT INTO Orders (totalCost, datePurchased, accountName) VALUES (?, ?, ?)';
   var orderIDsQuery = 'SELECT Orders.orderID FROM Orders Orders.orderID = ?';
   async.forEachOfSeries(cart, function(value, key, next) {
@@ -222,7 +234,7 @@ app.post('/cart', connectDb, function(req, res) {
     productID = value.productID;
     console.log('productID: ')
     console.log(productID);
-    req.db.query(catIDQuery, [productID], function(err, results) {
+    req.db.query(catIDQuery, [productID, value.numProducts], function(err, results) {
       maxPrice = 0;
 
       console.log(results);
@@ -230,7 +242,7 @@ app.post('/cart', connectDb, function(req, res) {
       for(var i = 0; i < results.length; i++){
         if(results[i].price > maxPrice){
           maxPrice = results[i].price;
-          catalogID = results[i].catalogID;
+          catalogID.push(results[i].catalogID);
         }
       }
       //console.log('max price:');
@@ -251,12 +263,17 @@ app.post('/cart', connectDb, function(req, res) {
     req.db.query(insertIntoOrders, [totalPrice, date, accountName], function(err, result) {
       if(err) throw err;
       orderID = result.insertId;
-      var itemsInOrderQuery = 'INSERT INTO ItemsinOrder (orderID, catalogID, itemsOrdered) VALUES (?, ?, ?)';
-      req.db.query(itemsInOrderQuery, [orderID, catalogID, totalItemsOrdered], function(err, result) {
-        if(err) throw err;
+      async.forEachOf(cart, function(value, key, callback) {
+        var itemsInOrderQuery = 'INSERT INTO ItemsinOrder (orderID, catalogID, itemsOrdered) VALUES (?, ?, ?)';
+        req.db.query(itemsInOrderQuery, [orderID, catalogID[key], value.numProducts], function(err, result) {
+          if(err) throw err;
 
-        res.render('checkout-message', Object.assign(response));
 
+          callback();
+        });
+      }, function (err) {
+        req.session.cart = [];
+        res.redirect('/customer');
       });
 
     });
@@ -293,7 +310,7 @@ app.post('/specificProduct/:id', connectDb, function(req, res) {
         else{
           console.log('In else statement');
           response.cart[i].numProducts++;
-          res.render('cart-message', Object.assign(response));
+          res.redirect('/cart');
         }
       }
     }
@@ -304,7 +321,7 @@ app.post('/specificProduct/:id', connectDb, function(req, res) {
         numProducts: 1
       };
       req.session.cart.push(cartItem);
-      res.render('cart-message', Object.assign(response));
+      res.redirect('/cart');
       close(req);
     }
   });
@@ -315,7 +332,7 @@ app.get('/customer', connectDb, function(req, res) {
   console.log('---Got request for the customer page---');
 
   if (req.session.username) {
-    var query = 'SELECT Orders.orderID, totalCost, datePurchased FROM Orders WHERE accountName = ? ORDER BY datePurchased';
+    var query = 'SELECT Orders.orderID, totalCost, datePurchased FROM Orders WHERE accountName = ? ORDER BY datePurchased DESC, orderID DESC';
     req.db.query(query, [req.session.username], function(err, order) {
       if (err) {
         console.log('ERROR: DB connection failed');
@@ -567,7 +584,7 @@ app.post('/login', connectDb, function(req, res) {
           var response = getResponse(req);
 
           console.log(req.session.username + ' logged in');
-          res.render('login-action', response);
+          res.redirect('/customer');
         }
         close(req);
     })
@@ -592,7 +609,7 @@ app.post('/login', connectDb, function(req, res) {
         var response = getResponse(req);
 
         console.log(req.session.username + ' logged in');
-        res.render('login-action', response);
+        res.redirect('/supplier');
       }
       close(req);
     })
@@ -633,7 +650,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
         //Send session variables as response
         var response = getResponse(req);
 
-        res.render('signup-action', response);
+        res.redirect('/customer');
       })
       close(req);
     }
@@ -670,7 +687,7 @@ app.post('/signup-supplier', connectDb, function(req, res) {
         //Send session variables as response
         var response = getResponse(req);
 
-        res.render('signup-action', response);
+        res.redirect('/supplier');
       })
       close(req);
     }
