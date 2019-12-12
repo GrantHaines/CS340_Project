@@ -13,7 +13,7 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
-const async = require('async')
+//const async = require('async')
 
 var passwordHash = require('password-hash');
 
@@ -233,15 +233,15 @@ app.post('/cart', connectDb, function(req, res) {
           catalogID = results[i].catalogID;
         }
       }
-      console.log('max price:');
-      console.log(maxPrice);
-      console.log('cat ID:');
-      console.log(catalogID);
+      //console.log('max price:');
+      //console.log(maxPrice);
+      //console.log('cat ID:');
+      //console.log(catalogID);
       totalItemsOrdered += productsOrdered;
-      console.log('total items ordered:');
-      console.log(totalItemsOrdered);
+      //console.log('total items ordered:');
+      //console.log(totalItemsOrdered);
       totalPrice += maxPrice * productsOrdered;
-      console.log(totalPrice);
+      //console.log(totalPrice);
       
       next();
     });
