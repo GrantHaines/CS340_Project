@@ -1,6 +1,21 @@
-<h1 class="page-title centeredText">Browse All Items</h1> 
-<main class="all-products-container">
+<h1 class="page-title centeredText">Browse All Items</h1>
+<h2 class="centeredText">Search Filters:</h2>
+<div class="search-container">
+    <div>
+    <form>
+        Name: <input type="text" name="productname"><br>
+        Category: <select name="category"><option value=""></option>{{> categories}}</select><br>
+        Supplier: <input type="text" name="supplier"><br>
+        <button type="submit">Filter</button>
+    </form>
+    <form>
+        <button type="submit">Clear Filters</button>
+    </form>
+    </div>
+</div>
+
+<div class="all-products-container">
     {{#each products}}
        {{> product this}}
     {{/each}} 
-</main>
+</div>

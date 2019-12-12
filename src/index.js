@@ -13,6 +13,9 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
+const async = require('async')
+
+var passwordHash = require('password-hash');
 
 const async = require("async");
 
@@ -109,6 +112,8 @@ app.get('/', connectDb, function(req, res, next) {
       products[i].price = products[i].price.toFixed(2);
       if (products[i].numBought == null) products[i].numBought = 0;
       if (products[i].numAvailable == null) products[i].numAvailable = 0;
+      if (req.session.username)
+        products[i].username = req.session.username
     }
     var response = getResponse(req);
     res.render('home', Object.assign({products},response));
@@ -119,10 +124,31 @@ app.get('/', connectDb, function(req, res, next) {
 app.get('/browse', connectDb, function(req, res) {
   console.log('---Got request for the browse page---');
 
-  var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, MAX(price) AS price, SUM(numberOfEntries) AS numAvailable ';
-  var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
-  var query = select + from +'GROUP BY P.productID HAVING numAvailable > 0 ORDER BY P.category, price DESC';
-  req.db.query(query, function(
+  var filterName = null;
+  var filterCategory = null;
+  var filterSupplier = null;
+
+  if (req.query.productname != null && req.query.productname != '')
+    filterName = 'productName LIKE \'%' + req.query.productname + '%\' ';
+  if (req.query.category != null && req.query.category != '')
+    filterCategory = 'category = \'' + req.query.category + '\' ';
+  if (req.query.supplier != null && req.query.supplier != '')
+    filterSupplier = 'supplierName LIKE \'%' + req.query.supplier + '%\' ';
+
+  var sqlquery = 'SELECT * FROM browse';
+
+  if (filterName != null || filterCategory != null || filterSupplier != null) {
+    sqlquery += ' WHERE ';
+    if (filterName != null)
+      sqlquery += filterName;
+    if (filterCategory != null)
+      sqlquery += filterCategory;
+    if (filterSupplier != null)
+      sqlquery += filterSupplier;
+    console.log('browse conditions =', sqlquery);
+  }
+
+  req.db.query(sqlquery, function(
     err,
     products
   ) {
@@ -130,22 +156,10 @@ app.get('/browse', connectDb, function(req, res) {
     var response = getResponse(req);
     for (var i = 0; i < products.length; i++) {
       products[i].price = products[i].price.toFixed(2); //Convert price to have two decimal points
+      if (req.session.username)
+        products[i].username = req.session.username
     }
     res.render('browse', Object.assign({products}, response));
-    close(req);
-  });
-});
-
-app.get('/specificProduct/:id', connectDb, function(req, res, next) {
-  let id = req.params.id
-  req.db.query('SELECT P.productName, P.description, P.supplierName, P.category FROM Products P WHERE productID = ?', [id], function(err, productDetails) {
-    if (err) return next(err);
-    if (productDetails.length === 0) {
-      info(`Product with id ${id} not found`);
-    } else {
-      var response = getResponse(req);
-      res.render('specificProduct', Object.assign({productDetails}, response));
-    }
     close(req);
   });
 });
@@ -370,10 +384,10 @@ app.get('/supplier-product', connectDb, function(req, res, next) {
   console.log('---Got request for the supplier-product page---');
 
   if (req.session.suppliername) {
-    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, (SELECT MAX(price) FROM Catalog WHERE productID = 5 AND numberOfEntries > 0) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
+    var select = 'SELECT P.productID, P.productName, P.category, P.description, P.supplierName, (SELECT MAX(price) FROM Catalog WHERE productID = ? AND numberOfEntries > 0) AS maxPrice, SUM(numberOfEntries) AS numAvailable, SUM(itemsOrdered) AS numBought ';
     var from = 'FROM Products P LEFT JOIN Catalog C ON P.productID = C.productID LEFT JOIN ItemsinOrder I ON C.catalogID = I.catalogID ';
     var sql = select + from +'WHERE P.supplierName = ? AND P.productID = ? GROUP BY P.productID';
-    req.db.query(sql, [req.session.suppliername, req.query.id], function(err, data) {
+    req.db.query(sql, [req.query.id, req.session.suppliername, req.query.id], function(err, data) {
       if (err) return next(err);
       console.log(data);
       if (data.length === 0) {
@@ -440,6 +454,47 @@ app.get('/signup', connectDb, function(req, res) {
   POST submission handlers
 */
 
+//Handler for updating a product
+app.post('/supplier-updateproduct', connectDb, function(req, res) {
+  console.log('---Got request for removing entries from a catalog entry---');
+
+  if (req.session.suppliername && req.body.newname) {
+    var sqlquery = 'UPDATE Products SET productName = ? WHERE productID = ?';
+    req.db.query(sqlquery, [req.body.newname, req.body.productID], function (err, result) {
+      if (err) throw err;
+
+      close(req);
+      res.redirect('/supplier-product?id=' + req.body.productID);
+    })
+  }
+  else if (req.session.suppliername && req.body.newdescription) {
+    var sqlquery = 'UPDATE Products SET description = ? WHERE productID = ?';
+    req.db.query(sqlquery, [req.body.newdescription, req.body.productID], function (err, result) {
+      if (err) throw err;
+
+      close(req);
+      res.redirect('/supplier-product?id=' + req.body.productID);
+    })
+  }
+  else close(req);
+});
+
+//Handler for removing entries from a catalog entry
+app.post('/supplier-updatecatalog', connectDb, function(req, res) {
+  console.log('---Got request for removing entries from a catalog entry---');
+
+  if (req.session.suppliername) {
+    var sqlquery = 'UPDATE Catalog SET numberOfEntries = ? WHERE catalogID = ?';
+    req.db.query(sqlquery, [req.body.numentries, req.body.catalogID], function (err, result) {
+      if (err) throw err;
+
+      close(req);
+      res.redirect('/supplier-product?id=' + req.body.productID);
+    })
+  }
+  else close(req);
+});
+
 //Handler for making the numEntries from a catalog entry 0
 app.post('/supplier-deletecatalog', connectDb, function(req, res) {
   console.log('---Got request for removing entries from a catalog entry---');
@@ -499,8 +554,7 @@ app.post('/login', connectDb, function(req, res) {
           console.log('ERROR: DB connection failed');
           throw err;
         }
-
-        if(data.length == 0 || data[0].password != req.body.password)
+        if(data.length == 0 || !passwordHash.verify(req.body.password, data[0].password))
         res.render('login', {'message': 'Username not found/Password incorrect'});
         else {
           console.log('Login successful');
@@ -527,7 +581,7 @@ app.post('/login', connectDb, function(req, res) {
         throw err;
       }
 
-      if(data.length == 0 || data[0].password != req.body.password)
+      if(data.length == 0 || !passwordHash.verify(req.body.password, data[0].password))
         res.render('login', {'message': 'Company name not found/Password incorrect'});
       else {
         console.log('Login successful');
@@ -560,6 +614,7 @@ app.post('/signup-customer', connectDb, function(req, res) {
       console.log('ERROR: DB connection failed');
       throw err;
     }
+    req.body.password = passwordHash.generate(req.body.password);
 
     //If so add to DB
     if (data.length == 0) {
@@ -602,6 +657,7 @@ app.post('/signup-supplier', connectDb, function(req, res) {
     //If so add to DB
     if (data.length == 0) {
       console.log('Adding company to DB');
+      req.body.password = passwordHash.generate(req.body.password);
       var insertQuery = 'INSERT INTO Suppliers (supplierName, password) VALUES (?, ?)';
       req.db.query(insertQuery, [req.body.companyname, req.body.password], function(err, result) {
         if (err) {

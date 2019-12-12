@@ -22,6 +22,17 @@
                 <p class="product-description">
                     <span class="product-info">Purchased:</span> {{numBought}}
                 </p>
+                <form class="catalog-form" action="/supplier-updateproduct" method="POST">
+                    <input type="hidden" name="productID" value="{{productID}}">
+                    Update Name: <input type="text" name="newname" maxlength="45">
+                    <input type="submit">
+                </form><br>
+                <form class="catalog-form" action="/supplier-updateproduct" method="POST">
+                    <input type="hidden" name="productID" value="{{productID}}">
+                    Update Description:
+                    <br><textarea type="text" name="newdescription" rows="5" cols="30"></textarea>
+                    <br><input type="submit">
+                </form><br>
             </div>
             {{#each catalogItems}}
             <div class="product-supplier-box">
@@ -34,7 +45,15 @@
                 <p class="product-description">
                     <span class="product-info">Entries remaining:</span> {{numberOfEntries}}
                 </p>
-                <form action="/supplier-deletecatalog" method="POST">
+                <form class="catalog-form" action="/supplier-updatecatalog" method="POST">
+                    <input type="hidden" name="catalogID" value="{{catalogID}}">
+                    <input type="hidden" name="productID" value="{{productID}}">
+                    Update number of entries:
+                    <input type="number" name="numentries" max="1000" min="1" step="1">
+                    <input type="submit">
+                </form>
+                <br>
+                <form class="catalog-form" action="/supplier-deletecatalog" method="POST">
                     <input type="hidden" name="catalogID" value="{{catalogID}}">
                     <input type="hidden" name="productID" value="{{productID}}">
                     <button type="submit">Delete Catalog Entry</button>
