@@ -13,9 +13,11 @@ const session = require('express-session');
 const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require("body-parser");
-const async = require('async')
+//const async = require('async')
 
 var passwordHash = require('password-hash');
+
+const async = require("async");
 
 const app = express();
 
@@ -187,6 +189,81 @@ app.get('/cart', connectDb, function(req, res) {
       close(req);
     });
    }
+});
+
+app.post('/cart', connectDb, function(req, res) {
+
+  var response = getResponse(req);
+  var totalPrice = 0;
+  var maxPrice = 0;
+  var productsOrdered;
+  var productID;
+  var totalItemsOrdered = 0;
+  var orderID;
+  var date;
+
+  date = new Date();
+  date = date.getUTCFullYear() + '-' +
+  ('00' + (date.getUTCMonth()+1)).slice(-2) + '-' +
+  ('00' + date.getUTCDate()).slice(-2);
+
+  
+  var catalogID;
+  var accountName = response.username;
+  var cart = response.cart;
+  var catIDQuery = 'SELECT C.catalogID, C.price FROM Catalog C WHERE C.productID = ?'; 
+  var insertIntoOrders = 'INSERT INTO Orders (totalCost, datePurchased, accountName) VALUES (?, ?, ?)';
+  var orderIDsQuery = 'SELECT Orders.orderID FROM Orders Orders.orderID = ?';
+  async.forEachOfSeries(cart, function(value, key, next) {
+    console.log('In loop');
+    productsOrdered = value.numProducts;
+    console.log('products ordered:')
+    console.log(productsOrdered);
+    productID = value.productID;
+    console.log('productID: ')
+    console.log(productID);
+    req.db.query(catIDQuery, [productID], function(err, results) {
+      maxPrice = 0;
+
+      console.log(results);
+
+      for(var i = 0; i < results.length; i++){
+        if(results[i].price > maxPrice){
+          maxPrice = results[i].price;
+          catalogID = results[i].catalogID;
+        }
+      }
+      //console.log('max price:');
+      //console.log(maxPrice);
+      //console.log('cat ID:');
+      //console.log(catalogID);
+      totalItemsOrdered += productsOrdered;
+      //console.log('total items ordered:');
+      //console.log(totalItemsOrdered);
+      totalPrice += maxPrice * productsOrdered;
+      //console.log(totalPrice);
+      
+      next();
+    });
+    
+   
+  }, function(err) {
+    req.db.query(insertIntoOrders, [totalPrice, date, accountName], function(err, result) {
+      if(err) throw err;
+      orderID = result.insertId;
+      var itemsInOrderQuery = 'INSERT INTO ItemsinOrder (orderID, catalogID, itemsOrdered) VALUES (?, ?, ?)';
+      req.db.query(itemsInOrderQuery, [orderID, catalogID, totalItemsOrdered], function(err, result) {
+        if(err) throw err;
+
+        res.render('checkout-message', Object.assign(response));
+
+      });
+
+    });
+  });
+
+
+
 });
  
 app.post('/specificProduct/:id', connectDb, function(req, res) {
