@@ -5,7 +5,14 @@
     <h1 class="centeredText">Welcome, {{firstName}} {{lastName}}</h1>
     {{#if cart}}
     <h2 class="centeredText">Your Cart:</h2>
-
+        <main class="all-products-container">
+            {{#each cart}}
+            {{> product this}}
+            {{/each}} 
+            <form action="" method="POST">
+                <input class="add-to-order-button" type="submit" name="Checkout" value="Checkout" />
+            </form>
+        </main>
     {{/if}}
     {{#if order}}
     <h2 class="centeredText">Your Past Orders:</h2>

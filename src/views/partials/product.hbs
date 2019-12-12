@@ -16,9 +16,11 @@
             <span class="product-info">Price:</span> ${{price}}
         </p>
         {{#if username}}
+            <div class="supplier-container">
             <form action="/specificProduct/{{productID}}" method="POST">
                 <button class="add-to-order-button" type="submit" name="Add to your orders" value="Add to your orders">Add to Cart</button>
             </form>
+            </div>
         {{/if}}
     </div>
 </div>
